@@ -27,7 +27,10 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Operating System :: OS Independent",
 ]
-dependencies = ["pytest-qt"]
+dependencies = [
+    "pytest-qt",
+    "PyQt6"
+]
 
 [tool.setuptools.dynamic]
 version = { attr = "pytest_qfield.__version__" }
@@ -43,6 +46,7 @@ pytest-qfield = "pytest_qfield.plugin"
 
 [tool.pytest.ini_options]
 doctest_encoding = "utf-8"
+env_files = [".env"]
 
 
 [tool.uv]
@@ -51,6 +55,8 @@ default-groups = ["development"]
 [dependency-groups]
 development = [
     "pytest-cov",
+    "pytest-dotenv",
+    "pytest-subtests",
     # Linting
     "mypy",
     "pre-commit",
@@ -94,8 +100,9 @@ lint.unfixable = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"src/pytest_qfield/stub_interface.py" = ["N802"]
 "test/*" = [
-    "ANN001",
-    "ANN201",
-    "PLR2004"
+    "ANN001", # missing-type-function-argument
+    "ANN201", # missing-return-type-undocumented-public-function
+    "PLR2004" # magic-value-comparison
 ]

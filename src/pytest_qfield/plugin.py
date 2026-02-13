@@ -15,3 +15,144 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
+import os
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+import pytest
+from PyQt6.QtCore import QSettings
+from PyQt6.QtQml import QQmlApplicationEngine
+
+from pytest_qfield.qfieldbot import QFieldBot
+from pytest_qfield.stub_interface import (
+    QFieldAppInterfaceStub,
+    QFieldPlatformUtilitiesStub,
+)
+
+if TYPE_CHECKING:
+    from _pytest.config import Parser
+    from _pytest.fixtures import SubRequest
+    from PyQt6.QtWidgets import QApplication
+    from pytestqt.logging import _QtMessageCapture
+    from pytestqt.qtbot import QtBot
+
+_QFIELD_IMPORTS_DIR_ENV = "QFIELD_IMPORTS_DIR"
+_QFIELD_IMPORT_DIR_KEY = "qfield_imports_dir"
+_QFIELD_SHOW_WINDOW_KEY = "qfield_show_window"
+
+
+@pytest.fixture(scope="session")
+def qapp_args() -> list[str]:
+    return ["QField test"]
+
+
+@pytest.fixture
+def qfield_bot(  # noqa: PLR0913
+    qapp: "QApplication",
+    qfield_iface: QFieldAppInterfaceStub,
+    qfield_platform_utilities_stub: QFieldPlatformUtilitiesStub,
+    qtbot: "QtBot",
+    qtlog: "_QtMessageCapture",
+    request: "SubRequest",
+    qfield_qml_extra_context_properties: dict[str, object],
+) -> "QFieldBot":
+    """Fixture used to create a QFieldBot instance for using during testing."""
+    qfield_import_path = _get_qfied_import_path(request)
+
+    engine = QQmlApplicationEngine()
+
+    # Load QField imports
+    engine.addImportPath(str(qfield_import_path))
+
+    # Inject QField interface stubs
+    qfield_iface.setParent(engine)
+    qfield_platform_utilities_stub.setParent(engine)
+
+    system_font_point_size = qapp.font().pointSizeF() + 2.0
+
+    # Inject context properties
+    context_properties = {
+        "iface": qfield_iface,
+        "platformUtilities": qfield_platform_utilities_stub,
+        "systemFontPointSize": system_font_point_size,
+        "settings": QSettings(),
+        **qfield_qml_extra_context_properties,
+    }
+
+    for property_name, property_value in context_properties.items():
+        engine.rootContext().setContextProperty(property_name, property_value)
+
+    if _get_qfield_show_window(request):
+        qfield_iface.show()
+
+    return QFieldBot(
+        qml_engine=engine, qfield_iface=qfield_iface, qtbot=qtbot, qtlog=qtlog
+    )
+
+
+@pytest.fixture
+def qfield_iface() -> QFieldAppInterfaceStub:
+    """
+    Stub implementation for QFieldAppInterface.
+
+    Override this fixture to use an extended version of the class if needed.
+    """
+    iface = QFieldAppInterfaceStub()
+    return iface
+
+
+@pytest.fixture
+def qfield_platform_utilities_stub() -> QFieldPlatformUtilitiesStub:
+    """
+    Stub implementation for QFieldPlatformUtilities.
+
+    Override this fixture to use an extended version of the class if needed.
+    """
+    iface = QFieldPlatformUtilitiesStub()
+    return iface
+
+
+@pytest.fixture
+def qfield_qml_extra_context_properties() -> dict[str, object]:
+    """
+    Override this fixture to provide extra context properties for QField QML files.
+    """
+    return {}
+
+
+def pytest_addoption(parser: "Parser") -> None:
+    parser.addini(
+        _QFIELD_IMPORT_DIR_KEY,
+        "Absolute path to a directory containing QField imports. "
+        "Usually src/qml/imports in QField source code.",
+        default=os.getenv(_QFIELD_IMPORTS_DIR_ENV),
+    )
+    parser.addini(
+        _QFIELD_SHOW_WINDOW_KEY,
+        "Show QField window during tests.",
+        type="bool",
+        default="true",
+    )
+
+
+def _get_qfied_import_path(request: "SubRequest") -> Path:
+    qfield_import_path_config = request.config.getini(
+        _QFIELD_IMPORT_DIR_KEY
+    ) or os.getenv(_QFIELD_IMPORTS_DIR_ENV)
+    if not qfield_import_path_config:
+        raise ValueError(
+            f"No {_QFIELD_IMPORT_DIR_KEY} ini value "
+            f"or {_QFIELD_IMPORTS_DIR_ENV} environment variable set!"
+        )
+
+    qfield_import_path = Path(qfield_import_path_config)
+    if not qfield_import_path.exists():
+        raise ValueError(f"{qfield_import_path} does not exist!")
+
+    if not (qfield_import_path / "Theme").exists():
+        raise ValueError(f"{qfield_import_path / 'Theme'} does not exist!")
+    return qfield_import_path
+
+
+def _get_qfield_show_window(request: "SubRequest") -> bool:
+    return bool(request.config.getini(_QFIELD_SHOW_WINDOW_KEY))
