@@ -1,0 +1,101 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pytest-qfield"
+description = "A pytest plugin for testing QField qml plugins"
+readme = "README.md"
+
+dynamic = ["version"]
+keywords = ["pytest", "QField", "GIS"]
+
+requires-python = ">=3.10"
+license = "GPL-2.0"
+license-files = ["LICENSE"]
+classifiers = [
+    "Framework :: Pytest",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Testing",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Operating System :: OS Independent",
+]
+dependencies = ["pytest-qt"]
+
+[tool.setuptools.dynamic]
+version = { attr = "pytest_qfield.__version__" }
+
+[tool.setuptools.package-data]
+pytest_qfield = ["py.typed"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.entry-points.pytest11]
+pytest-qfield = "pytest_qfield.plugin"
+
+[tool.pytest.ini_options]
+doctest_encoding = "utf-8"
+
+
+[tool.uv]
+default-groups = ["development"]
+
+[dependency-groups]
+development = [
+    "pytest-cov",
+    # Linting
+    "mypy",
+    "pre-commit",
+    "ruff",
+]
+
+[tool.ruff]
+line-length = 88
+indent-width = 4
+
+target-version = "py310"
+
+lint.select = [
+    "ANN", # flake8-annotations
+    "ARG", # flake8-unused-arguments
+    "B", # flake8-bugbear
+    "C", # flake8-comprehensions
+    "C90", # flake8, mccabe
+    "E", # flake8, pycodestyle
+    "F", # flake8, Pyflakes
+    "I", # isort
+    "INP", # flake8-no-pep420
+    "N", # pep8-naming
+    "PIE", # flake8-pie
+    "PGH", # pygrep-hooks
+    "PL", # pylint
+    "PT", # flake8-pytest-style
+    "RUF", # Ruff-specific rules
+    "SIM", # flake8-simplify
+    "T", # flake8-print
+    "ICN", # flake8-import-conventions
+    "TCH", # flake8-type-checking
+    "TID", # flake8-tidy-imports
+    "W", # flake8, pycodestyle
+    "UP", # pyupgrade
+]
+
+lint.unfixable = [
+    "F401", # Unused imports
+    "F841", # Unused variables
+]
+
+[tool.ruff.lint.per-file-ignores]
+"test/*" = [
+    "ANN001",
+    "ANN201",
+    "PLR2004"
+]
