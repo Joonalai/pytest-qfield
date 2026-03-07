@@ -15,11 +15,13 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
-
+import re
+import shutil
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
-from PyQt6.QtCore import QPointF, Qt, QtMsgType
+from PyQt6.QtCore import QPointF, Qt, QtMsgType, QUrl
+from PyQt6.QtQml import QQmlComponent
 from PyQt6.QtQuick import QQuickItem
 
 if TYPE_CHECKING:
@@ -28,6 +30,34 @@ if TYPE_CHECKING:
     from pytestqt.qtbot import QtBot
 
     from pytest_qfield.stub_interface import QFieldAppInterfaceStub
+
+
+QML_JS_QOBJECT_TEMPLATE = """
+import QtQml
+import "{js_file_name}" as Logic
+
+QtObject {{
+    function call({params}) {{
+        return Logic.{function_name}({params})
+    }}
+}}
+
+"""
+
+
+class JsQObject(Protocol):
+    """
+    Protocol for JavaScript QObject with a call method.
+    """
+
+    @staticmethod
+    def call(*args: Any) -> Any:  # noqa: ANN401
+        """
+        Function to call the JavaScript function with the given parameters.
+        :param args: Parameters to call the function with.
+        :return: A possible return value from the function
+        """
+        ...
 
 
 class QFieldBot:
@@ -41,11 +71,13 @@ class QFieldBot:
         qml_engine: "QQmlApplicationEngine",
         qtbot: "QtBot",
         qtlog: "_QtMessageCapture",
+        tmp_path: "Path",
     ) -> None:
         self.iface = qfield_iface
         self._qml_engine = qml_engine
         self.qtbot = qtbot
         self.qtlog = qtlog
+        self._tmp_path = tmp_path
         self._plugin_loaded = False
 
     def load_plugin(
@@ -61,6 +93,33 @@ class QFieldBot:
         self.load_qml(qfield_plugin_qml_file, raise_if_warnings)
         self.iface.set_qml_root(self._qml_engine.rootObjects()[0])
         self._plugin_loaded = True
+
+    def load_js_function(
+        self, js_file: Path, name: str, params: list[str]
+    ) -> JsQObject:
+        """
+        Load js function from file as a QObject with function "call".
+        Call object.call to execute the function.
+
+        :param js_file: Path to the JavaScript file to load.
+        :param name: Name of the function to load.
+        :param params: List of parameter names for the function.
+        :return: JsQObject with the loaded function
+        """
+        shutil.copy(js_file, self._tmp_path / js_file.name)
+        qml_code = QML_JS_QOBJECT_TEMPLATE.format(
+            js_file_name=js_file.name, function_name=name, params=", ".join(params)
+        )
+        main_qml = self._tmp_path / "main.qml"
+        main_qml.touch()
+        main_qml.write_text(qml_code)
+
+        component = QQmlComponent(self._qml_engine)
+        component.loadUrl(QUrl.fromLocalFile(str(main_qml)))
+        js_object = component.create()
+        if js_object is None:
+            raise ValueError("Could not create QObject with js function")
+        return cast("JsQObject", js_object)
 
     def get_item(self, object_name: str) -> "QQuickItem":
         self._ensure_plugin_loaded()
@@ -109,3 +168,16 @@ class QFieldBot:
     def _ensure_plugin_loaded(self) -> None:
         if not self._plugin_loaded:
             raise RuntimeError("Plugin not loaded yet!")
+
+
+def _get_js_function_signature(js_file: Path, function_name: str) -> tuple[str, str]:
+    text = js_file.read_text(encoding="utf-8")
+
+    pattern = rf"function\s+{re.escape(function_name)}\s*\(([^)]*)\)"
+    match = re.search(pattern, text)
+
+    if not match:
+        raise ValueError(f"Function {function_name!r} not found in {js_file}")
+
+    params = match.group(1).strip()
+    return function_name, params

@@ -40,3 +40,13 @@ def test_qfield_bot_should_load_plugin(qfield_bot: "QFieldBot", subtests: "SubTe
         qfield_bot.click_item(button)
     with subtests.test("plugin log message is correct"):
         assert qfield_bot.iface.logged_messages == ["Plugin button clicked!"]
+
+
+def test_load_js_function(qfield_bot: "QFieldBot", data_path: "Path"):
+    js_object = qfield_bot.load_js_function(
+        data_path / "simple_plugin" / "js" / "jslogic.js", "logHello", ["string"]
+    )
+    assert js_object.call("return value") == "return value"
+    assert qfield_bot.iface.logged_messages == [
+        "Hello from JS!",
+    ]

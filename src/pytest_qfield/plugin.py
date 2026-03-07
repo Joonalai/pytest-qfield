@@ -55,6 +55,7 @@ def qfield_bot(  # noqa: PLR0913
     qtlog: "_QtMessageCapture",
     request: "SubRequest",
     qfield_qml_extra_context_properties: dict[str, object],
+    tmp_path: "Path",
 ) -> "QFieldBot":
     """Fixture used to create a QFieldBot instance for using during testing."""
     qfield_import_path = _get_qfied_import_path(request)
@@ -86,7 +87,11 @@ def qfield_bot(  # noqa: PLR0913
         qfield_iface.show()
 
     return QFieldBot(
-        qml_engine=engine, qfield_iface=qfield_iface, qtbot=qtbot, qtlog=qtlog
+        qml_engine=engine,
+        qfield_iface=qfield_iface,
+        qtbot=qtbot,
+        qtlog=qtlog,
+        tmp_path=tmp_path,
     )
 
 
