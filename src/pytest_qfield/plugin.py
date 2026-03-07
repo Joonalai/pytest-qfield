@@ -27,6 +27,7 @@ from pytest_qfield.qfieldbot import QFieldBot
 from pytest_qfield.stub_interface import (
     QFieldAppInterfaceStub,
     QFieldPlatformUtilitiesStub,
+    QgsProjectStub,
 )
 
 if TYPE_CHECKING:
@@ -50,6 +51,7 @@ def qfield_bot(  # noqa: PLR0913
     qapp: "QApplication",
     qfield_iface: QFieldAppInterfaceStub,
     qfield_platform_utilities_stub: QFieldPlatformUtilitiesStub,
+    qgs_project_stub: QgsProjectStub,
     qtbot: "QtBot",
     qtlog: "_QtMessageCapture",
     request: "SubRequest",
@@ -74,6 +76,7 @@ def qfield_bot(  # noqa: PLR0913
     context_properties = {
         "iface": qfield_iface,
         "platformUtilities": qfield_platform_utilities_stub,
+        "qgisProject": qgs_project_stub,
         "systemFontPointSize": system_font_point_size,
         "settings": QSettings(),
         **qfield_qml_extra_context_properties,
@@ -98,8 +101,7 @@ def qfield_iface() -> QFieldAppInterfaceStub:
 
     Override this fixture to use an extended version of the class if needed.
     """
-    iface = QFieldAppInterfaceStub()
-    return iface
+    return QFieldAppInterfaceStub()
 
 
 @pytest.fixture
@@ -109,8 +111,17 @@ def qfield_platform_utilities_stub() -> QFieldPlatformUtilitiesStub:
 
     Override this fixture to use an extended version of the class if needed.
     """
-    iface = QFieldPlatformUtilitiesStub()
-    return iface
+    return QFieldPlatformUtilitiesStub()
+
+
+@pytest.fixture
+def qgs_project_stub() -> QgsProjectStub:
+    """
+    Stub implementation for QgsProject (qgisProject in QML).
+
+    Override this fixture to use an extended version of the class if needed.
+    """
+    return QgsProjectStub()
 
 
 @pytest.fixture

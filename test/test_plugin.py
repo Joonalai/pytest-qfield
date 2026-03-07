@@ -17,8 +17,11 @@
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
 
 from typing import TYPE_CHECKING
+from unittest.mock import MagicMock
 
 import pytest
+
+from pytest_qfield.stub_interface import QgsProjectStub
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -51,3 +54,27 @@ def test_load_js_function(qfield_bot: "QFieldBot", data_path: "Path"):
     assert qfield_bot.iface.logged_messages == [
         "Hello from JS!",
     ]
+
+
+def test_qgis_project_map_layers_by_name(
+    qfield_bot: "QFieldBot",
+    qgs_project_stub: QgsProjectStub,
+    data_path: "Path",
+    subtests: "SubTests",
+):
+    js_object = qfield_bot.load_js_function(
+        data_path / "simple_plugin" / "js" / "jslogic.js", "getLayer", ["string"]
+    )
+    with subtests.test("non-existent layer should return None"):
+        assert not js_object.call("nonexistent")
+
+    with subtests.test("MagickMock layer can be used"):
+        layer = MagicMock()
+        layer.name.return_value = "foo"
+
+        qgs_project_stub.map_layers["foo"] = layer
+        returned_layer = js_object.call("foo")
+        assert returned_layer == layer
+        assert returned_layer.name() == "foo"
+
+    qgs_project_stub.map_layers.clear()

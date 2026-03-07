@@ -15,6 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
+from typing import Any
 
 from PyQt6.QtCore import QObject, pyqtSlot
 from PyQt6.QtQuick import QQuickItem, QQuickWindow
@@ -74,6 +75,22 @@ class QFieldAppInterfaceStub(QObject):
     @pyqtSlot(str)
     def logMessage(self, message: str) -> None:
         self.logged_messages.append(message)
+
+
+class QgsProjectStub(QObject):
+    """
+    Stub implementation for QgsProject (qgisProject in QML).
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.map_layers: dict[str, Any] = {}
+
+    @pyqtSlot(str, result=list)
+    def mapLayersByName(self, name: str) -> list:
+        if name not in self.map_layers:
+            return []
+        return [self.map_layers[name]]
 
 
 class QFieldPlatformUtilitiesStub(QObject):
