@@ -38,7 +38,6 @@ if TYPE_CHECKING:
 
 _QFIELD_IMPORTS_DIR_ENV = "QFIELD_IMPORTS_DIR"
 _QFIELD_IMPORT_DIR_KEY = "qfield_imports_dir"
-_QFIELD_SHOW_WINDOW_KEY = "qfield_show_window"
 
 
 @pytest.fixture(scope="session")
@@ -82,9 +81,6 @@ def qfield_bot(  # noqa: PLR0913
 
     for property_name, property_value in context_properties.items():
         engine.rootContext().setContextProperty(property_name, property_value)
-
-    if _get_qfield_show_window(request):
-        qfield_iface.show()
 
     return QFieldBot(
         qml_engine=engine,
@@ -132,12 +128,6 @@ def pytest_addoption(parser: "Parser") -> None:
         "Usually src/qml/imports in QField source code.",
         default=os.getenv(_QFIELD_IMPORTS_DIR_ENV),
     )
-    parser.addini(
-        _QFIELD_SHOW_WINDOW_KEY,
-        "Show QField window during tests.",
-        type="bool",
-        default="true",
-    )
 
 
 def _get_qfied_import_path(request: "SubRequest") -> Path:
@@ -157,7 +147,3 @@ def _get_qfied_import_path(request: "SubRequest") -> Path:
     if not (qfield_import_path / "Theme").exists():
         raise ValueError(f"{qfield_import_path / 'Theme'} does not exist!")
     return qfield_import_path
-
-
-def _get_qfield_show_window(request: "SubRequest") -> bool:
-    return bool(request.config.getini(_QFIELD_SHOW_WINDOW_KEY))

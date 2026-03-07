@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 @pytest.fixture
 def load_plugin(qfield_bot: "QFieldBot", data_path: "Path"):
     qfield_bot.load_plugin(data_path / "simple_plugin" / "main.qml")
+    qfield_bot.show_window()
 
 
 @pytest.mark.usefixtures("load_plugin")

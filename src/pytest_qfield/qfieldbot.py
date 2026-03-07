@@ -80,6 +80,12 @@ class QFieldBot:
         self._tmp_path = tmp_path
         self._plugin_loaded = False
 
+    def show_window(self) -> None:
+        """
+        Show the QField application window.
+        """
+        self.iface.show()
+
     def load_plugin(
         self, qfield_plugin_qml_file: Path, raise_if_warnings: bool = True
     ) -> None:
