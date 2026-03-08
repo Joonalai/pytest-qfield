@@ -17,9 +17,9 @@
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
 
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock
 
 import pytest
+from PyQt6.QtCore import QObject, pyqtProperty
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -28,6 +28,21 @@ if TYPE_CHECKING:
 
     from pytest_qfield.qfieldbot import QFieldBot
     from pytest_qfield.stub_interface import QgsProjectStub
+
+
+class LayerStub(QObject):
+    def __init__(self, layer_name: str, is_valid: bool) -> None:
+        super().__init__()
+        self._layer_name = layer_name
+        self._is_valid = is_valid
+
+    @pyqtProperty(str)
+    def name(self) -> str:
+        return self._layer_name
+
+    @pyqtProperty(bool)
+    def isValid(self) -> bool:
+        return self._is_valid
 
 
 @pytest.fixture
@@ -86,13 +101,13 @@ def test_qgis_project_map_layers_by_name(
     with subtests.test("non-existent layer should return None"):
         assert not js_object.call("nonexistent")
 
-    with subtests.test("MagickMock layer can be used"):
-        layer = MagicMock()
-        layer.name.return_value = "foo"
+    with subtests.test("QObject layer can be used"):
+        layer = LayerStub(layer_name="foo", is_valid=True)
 
         qgs_project_stub.map_layers["foo"] = layer
         returned_layer = js_object.call("foo")
         assert returned_layer == layer
-        assert returned_layer.name() == "foo"
+        assert returned_layer.name == "foo"
+        assert qfield_bot.iface.logged_messages == ["Layer foo is valid!"]
 
     qgs_project_stub.map_layers.clear()

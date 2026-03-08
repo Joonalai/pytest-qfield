@@ -11,5 +11,9 @@ function logHello(extra_string) {
 }
 
 function getLayer(name) {
-    return qgisProject.mapLayersByName(name)[0]
+    const layer = qgisProject.mapLayersByName(name)[0];
+    if (layer && layer.isValid) {
+        iface.logMessage(`Layer ${layer.name} is valid!`);
+    }
+    return layer
 }

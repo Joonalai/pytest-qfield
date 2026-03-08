@@ -107,5 +107,6 @@ lint.unfixable = [
 "test/*" = [
     "ANN001", # missing-type-function-argument
     "ANN201", # missing-return-type-undocumented-public-function
-    "PLR2004" # magic-value-comparison
+    "PLR2004", # magic-value-comparison
+    "N802", # Function name should be lowercase
 ]
