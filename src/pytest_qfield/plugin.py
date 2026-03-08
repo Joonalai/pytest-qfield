@@ -52,6 +52,7 @@ def qfield_bot(  # noqa: PLR0913
     qfield_iface: QFieldAppInterfaceStub,
     qfield_platform_utilities_stub: QFieldPlatformUtilitiesStub,
     qgs_project_stub: QgsProjectStub,
+    register_qfield_resources: None,  # noqa: ARG001
     main_window_qml_path: Path,
     qtbot: "QtBot",
     qtlog: "_QtMessageCapture",
@@ -152,6 +153,16 @@ def qfield_qml_extra_context_properties() -> dict[str, object]:
     Override this fixture to provide extra context properties for QField QML files.
     """
     return {}
+
+
+@pytest.fixture
+def register_qfield_resources() -> None:
+    """
+    Registers compiled resources.
+    Override this fixture to provide your own compiled resources.
+    """
+    # Register /gml
+    import pytest_qfield.qfield_resources  # noqa: F401, PLC0415
 
 
 def pytest_addoption(parser: "Parser") -> None:

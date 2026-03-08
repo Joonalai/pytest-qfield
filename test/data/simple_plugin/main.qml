@@ -1,6 +1,8 @@
 import QtQuick
 import Theme
 
+import "qrc:/qml" as QFieldItems
+
 Item {
     property var mainWindow: iface.mainWindow()
 
