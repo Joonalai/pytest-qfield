@@ -15,7 +15,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
-import re
 import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol, cast
@@ -103,7 +102,11 @@ class QFieldBot:
         self._plugin_loaded = True
 
     def load_js_function(
-        self, js_file: Path, name: str, params: list[str]
+        self,
+        js_file: Path,
+        name: str,
+        params: list[str],
+        extra_files: list[Path] | None = None,
     ) -> JsQObject:
         """
         Load js function from file as a QObject with function "call".
@@ -112,9 +115,12 @@ class QFieldBot:
         :param js_file: Path to the JavaScript file to load.
         :param name: Name of the function to load.
         :param params: List of parameter names for the function.
+        :param extra_files: List of extra files to load.
         :return: JsQObject with the loaded function
         """
-        shutil.copy(js_file, self._tmp_path / js_file.name)
+
+        for file in [js_file, *(extra_files if extra_files else [])]:
+            shutil.copy(file, self._tmp_path / file.name)
         qml_code = QML_JS_QOBJECT_TEMPLATE.format(
             js_file_name=js_file.name, function_name=name, params=", ".join(params)
         )
@@ -126,7 +132,10 @@ class QFieldBot:
         component.loadUrl(QUrl.fromLocalFile(str(main_qml)))
         js_object = component.create()
         if js_object is None:
-            raise ValueError("Could not create QObject with js function")
+            raise ValueError(
+                "Could not create QObject with js function: ",
+                [error.toString() for error in component.errors()],
+            )
         return cast("JsQObject", js_object)
 
     def get_item(self, object_name: str) -> "QQuickItem":
@@ -185,16 +194,3 @@ class QFieldBot:
             raise ValueError("Plugin not loaded yet!")
         # First object is mainWindow
         return self._qml_engine.rootObjects()[1]
-
-
-def _get_js_function_signature(js_file: Path, function_name: str) -> tuple[str, str]:
-    text = js_file.read_text(encoding="utf-8")
-
-    pattern = rf"function\s+{re.escape(function_name)}\s*\(([^)]*)\)"
-    match = re.search(pattern, text)
-
-    if not match:
-        raise ValueError(f"Function {function_name!r} not found in {js_file}")
-
-    params = match.group(1).strip()
-    return function_name, params

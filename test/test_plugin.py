@@ -31,6 +31,13 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture
+def js_directory(data_path: "Path") -> "Path":
+    js_directory = data_path / "simple_plugin" / "js"
+    assert js_directory.exists()
+    return js_directory
+
+
+@pytest.fixture
 def load_plugin(qfield_bot: "QFieldBot", data_path: "Path"):
     qfield_bot.load_plugin(
         data_path / "simple_plugin" / "main.qml", raise_if_warnings=True
@@ -50,24 +57,31 @@ def test_qfield_bot_should_load_plugin(qfield_bot: "QFieldBot", subtests: "SubTe
     # qfield_bot.qtbot.sleep(10000)
 
 
-def test_load_js_function(qfield_bot: "QFieldBot", data_path: "Path"):
+def test_load_js_function(qfield_bot: "QFieldBot", js_directory: "Path"):
     js_object = qfield_bot.load_js_function(
-        data_path / "simple_plugin" / "js" / "jslogic.js", "logHello", ["string"]
+        js_directory / "jslogic.js",
+        "logHello",
+        ["string"],
+        extra_files=[js_directory / "another_file.js"],
     )
     assert js_object.call("return value") == "return value"
     assert qfield_bot.iface.logged_messages == [
         "Hello from JS!",
+        "Log with another file",
     ]
 
 
 def test_qgis_project_map_layers_by_name(
     qfield_bot: "QFieldBot",
     qgs_project_stub: "QgsProjectStub",
-    data_path: "Path",
+    js_directory: "Path",
     subtests: "SubTests",
 ):
     js_object = qfield_bot.load_js_function(
-        data_path / "simple_plugin" / "js" / "jslogic.js", "getLayer", ["string"]
+        js_directory / "jslogic.js",
+        "getLayer",
+        ["string"],
+        extra_files=[js_directory / "another_file.js"],
     )
     with subtests.test("non-existent layer should return None"):
         assert not js_object.call("nonexistent")
