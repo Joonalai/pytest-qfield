@@ -19,7 +19,8 @@
 from typing import TYPE_CHECKING
 
 import pytest
-from PyQt6.QtCore import QObject, pyqtProperty
+
+from pytest_qfield.stub_interface.qgis_stubs import QgsVectorLayerStub
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -27,22 +28,7 @@ if TYPE_CHECKING:
     from pytest_subtests import SubTests
 
     from pytest_qfield.qfieldbot import QFieldBot
-    from pytest_qfield.stub_interface import QgsProjectStub
-
-
-class LayerStub(QObject):
-    def __init__(self, layer_name: str, is_valid: bool) -> None:
-        super().__init__()
-        self._layer_name = layer_name
-        self._is_valid = is_valid
-
-    @pyqtProperty(str)
-    def name(self) -> str:
-        return self._layer_name
-
-    @pyqtProperty(bool)
-    def isValid(self) -> bool:
-        return self._is_valid
+    from pytest_qfield.stub_interface.qgis_stubs import QgsProjectStub
 
 
 @pytest.fixture
@@ -102,7 +88,7 @@ def test_qgis_project_map_layers_by_name(
         assert not js_object.call("nonexistent")
 
     with subtests.test("QObject layer can be used"):
-        layer = LayerStub(layer_name="foo", is_valid=True)
+        layer = QgsVectorLayerStub(layer_name="foo", is_valid=True)
 
         qgs_project_stub.map_layers["foo"] = layer
         returned_layer = js_object.call("foo")

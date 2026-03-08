@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from pytestqt.logging import _QtMessageCapture
     from pytestqt.qtbot import QtBot
 
-    from pytest_qfield.stub_interface import QFieldAppInterfaceStub
+    from pytest_qfield.stub_interface.qfield_stubs import QFieldAppInterfaceStub
 
 
 QML_JS_QOBJECT_TEMPLATE = """

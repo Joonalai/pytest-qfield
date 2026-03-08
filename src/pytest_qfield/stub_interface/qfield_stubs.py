@@ -15,13 +15,16 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
-from typing import Any
 
-from PyQt6.QtCore import QObject, QSettings, QSizeF, QVariant, pyqtSlot
+from PyQt6.QtCore import QObject, QSizeF, pyqtSlot
 from PyQt6.QtQuick import QQuickItem, QQuickWindow
 
 
 class QFieldAppInterfaceStub(QObject):
+    """
+    Stub implementation of AppInterface.
+    """
+
     def __init__(self) -> None:
         super().__init__()
         self.added_item_count = 0
@@ -76,30 +79,7 @@ class QFieldAppInterfaceStub(QObject):
         self.logged_messages.append(message)
 
 
-class QgsProjectStub(QObject):
-    """
-    Stub implementation for QgsProject (qgisProject in QML).
-    """
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.map_layers: dict[str, Any] = {}
-
-    @pyqtSlot(str, result=list)
-    def mapLayersByName(self, name: str) -> list:
-        if name not in self.map_layers:
-            return []
-        return [self.map_layers[name]]
-
-
 class QFieldPlatformUtilitiesStub(QObject):
     @pyqtSlot(result=bool)
     def isSystemDarkTheme(self) -> bool:
         return False
-
-
-class QSettingsStub(QSettings):
-    @pyqtSlot(str, result="QVariant")
-    @pyqtSlot(str, "QVariant", result="QVariant")
-    def value(self, key: str, default_value: Any = None) -> "QVariant":  # noqa: ANN401
-        return super().value(key, default_value)

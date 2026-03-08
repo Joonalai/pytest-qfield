@@ -1,5 +1,7 @@
 import QtQuick
 import Theme
+import org.qgis
+import org.qfield
 
 import "qrc:/qml" as QFieldItems
 
