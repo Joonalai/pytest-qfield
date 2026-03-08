@@ -17,9 +17,8 @@
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
 from typing import Any
 
-from PyQt6.QtCore import QObject, pyqtSlot
+from PyQt6.QtCore import QObject, QSettings, QSizeF, QVariant, pyqtSlot
 from PyQt6.QtQuick import QQuickItem, QQuickWindow
-from PyQt6.QtWidgets import QMainWindow, QToolBar, QWidget
 
 
 class QFieldAppInterfaceStub(QObject):
@@ -28,35 +27,36 @@ class QFieldAppInterfaceStub(QObject):
         self.added_item_count = 0
         self.logged_messages: list[str] = []
 
-        self._main_window = QMainWindow()
-        self._main_window.setWindowTitle("Test window")
-
-        self._toolbar = self._main_window.addToolBar("Plugin toolbar")
-
-        self._quick_window = QQuickWindow()
-        self._qml_container = QWidget.createWindowContainer(
-            self._quick_window, self._main_window
-        )
-        self._main_window.setCentralWidget(self._qml_container)
-
-    def show(self) -> None:
-        self._main_window.show()
-
-    def set_qml_root(self, root: QObject) -> None:
-        if isinstance(root, QQuickItem):
-            scene_root = self._quick_window.contentItem()
-            root.setParentItem(scene_root)
-            root.setSize(scene_root.size())
-        else:
-            raise TypeError(f"Unsupported root type: {type(root)}")
+        self._main_window: QQuickWindow | None = None
 
     @property
-    def plugin_toolbar(self) -> "QToolBar":
-        return self._toolbar
+    def toast_messages(self) -> list[str]:
+        return self.mainWindow().property("toastMessages").toVariant()
+
+    def set_main_window(self, main_window: "QQuickWindow") -> None:
+        self._main_window = main_window
+
+    def show(self) -> None:
+        self.mainWindow().show()
+
+    def set_qml_root(self, root: QObject) -> None:
+        if not isinstance(root, QQuickItem):
+            raise TypeError(f"Unsupported root type: {type(root)}")
+
+        scene_root = self.mainWindow().findChild(QObject, "host")
+        if scene_root is None:
+            raise RuntimeError("Could not find host item in main window")
+        if not isinstance(scene_root, QQuickItem):
+            raise TypeError(f"Host is not a QQuickItem: {type(scene_root)}")
+
+        root.setParentItem(scene_root)
+        root.setSize(scene_root.size())
 
     @pyqtSlot(result=QObject)
-    def mainWindow(self) -> QObject:
-        return self._quick_window.contentItem()
+    def mainWindow(self) -> "QQuickWindow":
+        if self._main_window is None:
+            raise ValueError("Add mainWindow via set_main_window method first!")
+        return self._main_window
 
     @pyqtSlot(result=QObject)
     def mapCanvas(self) -> QObject:
@@ -64,13 +64,12 @@ class QFieldAppInterfaceStub(QObject):
         return self.mainWindow()
 
     @pyqtSlot(QObject)
-    def addItemToPluginsToolbar(self, _item: QQuickItem) -> None:
-        quick_window = QQuickWindow()
-        _item.setParentItem(quick_window.contentItem())
-        container = QWidget.createWindowContainer(quick_window)
-        container.setMinimumSize(int(_item.width()), int(_item.height()))
-        container.setMaximumSize(int(_item.width()), int(_item.height()))
-        self._toolbar.addWidget(container)
+    def addItemToPluginsToolbar(self, _item: "QQuickItem") -> None:
+        toolbar_row = self.mainWindow().findChild(QObject, "pluginsToolbarRow")
+        if toolbar_row is None:
+            raise RuntimeError("Plugins toolbar row not found")
+        _item.setSize(QSizeF(48, 48))
+        _item.setParentItem(toolbar_row)
 
     @pyqtSlot(str)
     def logMessage(self, message: str) -> None:
@@ -97,3 +96,10 @@ class QFieldPlatformUtilitiesStub(QObject):
     @pyqtSlot(result=bool)
     def isSystemDarkTheme(self) -> bool:
         return False
+
+
+class QSettingsStub(QSettings):
+    @pyqtSlot(str, result="QVariant")
+    @pyqtSlot(str, "QVariant", result="QVariant")
+    def value(self, key: str, default_value: Any = None) -> "QVariant":  # noqa: ANN401
+        return super().value(key, default_value)

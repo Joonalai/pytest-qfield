@@ -21,19 +21,20 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from pytest_qfield.stub_interface import QgsProjectStub
-
 if TYPE_CHECKING:
     from pathlib import Path
 
     from pytest_subtests import SubTests
 
     from pytest_qfield.qfieldbot import QFieldBot
+    from pytest_qfield.stub_interface import QgsProjectStub
 
 
 @pytest.fixture
 def load_plugin(qfield_bot: "QFieldBot", data_path: "Path"):
-    qfield_bot.load_plugin(data_path / "simple_plugin" / "main.qml")
+    qfield_bot.load_plugin(
+        data_path / "simple_plugin" / "main.qml", raise_if_warnings=True
+    )
     qfield_bot.show_window()
 
 
@@ -44,6 +45,9 @@ def test_qfield_bot_should_load_plugin(qfield_bot: "QFieldBot", subtests: "SubTe
         qfield_bot.click_item(button)
     with subtests.test("plugin log message is correct"):
         assert qfield_bot.iface.logged_messages == ["Plugin button clicked!"]
+        assert qfield_bot.iface.toast_messages == ["Toast displayed!"]
+    # Inspect visually that the button exists and the toast is visible
+    # qfield_bot.qtbot.sleep(10000)
 
 
 def test_load_js_function(qfield_bot: "QFieldBot", data_path: "Path"):
@@ -58,7 +62,7 @@ def test_load_js_function(qfield_bot: "QFieldBot", data_path: "Path"):
 
 def test_qgis_project_map_layers_by_name(
     qfield_bot: "QFieldBot",
-    qgs_project_stub: QgsProjectStub,
+    qgs_project_stub: "QgsProjectStub",
     data_path: "Path",
     subtests: "SubTests",
 ):

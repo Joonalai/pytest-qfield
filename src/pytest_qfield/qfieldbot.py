@@ -20,7 +20,7 @@ import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
-from PyQt6.QtCore import QPointF, Qt, QtMsgType, QUrl
+from PyQt6.QtCore import QObject, QPointF, Qt, QtMsgType, QUrl
 from PyQt6.QtQml import QQmlComponent
 from PyQt6.QtQuick import QQuickItem
 
@@ -96,8 +96,10 @@ class QFieldBot:
         :param raise_if_warnings: Whether to raise an exception
                 if any warnings or errors are logged during loading.
         """
-        self.load_qml(qfield_plugin_qml_file, raise_if_warnings)
-        self.iface.set_qml_root(self._qml_engine.rootObjects()[0])
+
+        self.iface.set_qml_root(
+            self.load_qml(qfield_plugin_qml_file, raise_if_warnings)
+        )
         self._plugin_loaded = True
 
     def load_js_function(
@@ -129,7 +131,7 @@ class QFieldBot:
 
     def get_item(self, object_name: str) -> "QQuickItem":
         self._ensure_plugin_loaded()
-        child = self._qml_engine.rootObjects()[0].findChild(QQuickItem, object_name)
+        child = self._get_plugin_root_object().findChild(QQuickItem, object_name)
         if not child:
             raise RuntimeError(f"QML object {object_name} not found!")
         return child
@@ -144,7 +146,7 @@ class QFieldBot:
             item.window(), mouse_button, pos=item.mapToScene(center).toPoint()
         )
 
-    def load_qml(self, qml_file: Path, raise_if_warnings: bool = True) -> None:
+    def load_qml(self, qml_file: Path, raise_if_warnings: bool = True) -> QObject:
         """
         Load a QML file into the QML engine and wait for it to be loaded.
 
@@ -153,6 +155,7 @@ class QFieldBot:
                 if any warnings or errors are logged during loading.
         """
         initial_log_count = len(self.qtlog.records)
+        initial_root_count = len(self._qml_engine.rootObjects())
 
         if not qml_file.exists():
             raise FileNotFoundError(f"QML file {qml_file} does not exist!")
@@ -168,12 +171,20 @@ class QFieldBot:
         if raise_if_warnings and new_logs:
             raise ValueError(f"QML file {qml_file} failed to load:\n{new_logs}")
 
-        if not len(self._qml_engine.rootObjects()) > 0:
-            raise RuntimeError(f"QML file {qml_file} did not load successfully!")
+        if not len(self._qml_engine.rootObjects()) > initial_root_count:
+            raise ValueError(f"QML file {qml_file} did not load successfully!")
+
+        return self._qml_engine.rootObjects()[-1]
 
     def _ensure_plugin_loaded(self) -> None:
         if not self._plugin_loaded:
-            raise RuntimeError("Plugin not loaded yet!")
+            raise ValueError("Plugin not loaded yet!")
+
+    def _get_plugin_root_object(self) -> "QObject":
+        if not len(self._qml_engine.rootObjects()) > 1:
+            raise ValueError("Plugin not loaded yet!")
+        # First object is mainWindow
+        return self._qml_engine.rootObjects()[1]
 
 
 def _get_js_function_signature(js_file: Path, function_name: str) -> tuple[str, str]:

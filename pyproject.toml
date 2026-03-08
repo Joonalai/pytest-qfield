@@ -36,7 +36,10 @@ dependencies = [
 version = { attr = "pytest_qfield.__version__" }
 
 [tool.setuptools.package-data]
-pytest_qfield = ["py.typed"]
+pytest_qfield = [
+    "py.typed",
+    "*.qml",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

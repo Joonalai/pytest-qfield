@@ -20,7 +20,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
-from PyQt6.QtCore import QSettings
 from PyQt6.QtQml import QQmlApplicationEngine
 
 from pytest_qfield.qfieldbot import QFieldBot
@@ -28,6 +27,7 @@ from pytest_qfield.stub_interface import (
     QFieldAppInterfaceStub,
     QFieldPlatformUtilitiesStub,
     QgsProjectStub,
+    QSettingsStub,
 )
 
 if TYPE_CHECKING:
@@ -52,6 +52,7 @@ def qfield_bot(  # noqa: PLR0913
     qfield_iface: QFieldAppInterfaceStub,
     qfield_platform_utilities_stub: QFieldPlatformUtilitiesStub,
     qgs_project_stub: QgsProjectStub,
+    main_window_qml_path: Path,
     qtbot: "QtBot",
     qtlog: "_QtMessageCapture",
     request: "SubRequest",
@@ -78,20 +79,41 @@ def qfield_bot(  # noqa: PLR0913
         "platformUtilities": qfield_platform_utilities_stub,
         "qgisProject": qgs_project_stub,
         "systemFontPointSize": system_font_point_size,
-        "settings": QSettings(),
+        "settings": QSettingsStub(),
         **qfield_qml_extra_context_properties,
     }
 
     for property_name, property_value in context_properties.items():
         engine.rootContext().setContextProperty(property_name, property_value)
 
-    return QFieldBot(
+    qfield_bot = QFieldBot(
         qml_engine=engine,
         qfield_iface=qfield_iface,
         qtbot=qtbot,
         qtlog=qtlog,
         tmp_path=tmp_path,
     )
+
+    # Load the main window
+    qfield_iface.set_main_window(qfield_bot.load_qml(main_window_qml_path))
+
+    return qfield_bot
+
+
+@pytest.fixture
+def main_window_qml_path() -> Path:
+    """
+    Path to a file with QML Code of the MainWindow
+
+    Feel free to override this fixture to use a custom QML code for the MainWindow.
+    """
+    main_window_qml_path = Path(__file__).parent / "main_window.qml"
+    if not main_window_qml_path.exists():
+        raise FileNotFoundError(
+            f"QML path for main_window.qml cannot be found in {main_window_qml_path}!"
+        )
+
+    return main_window_qml_path
 
 
 @pytest.fixture

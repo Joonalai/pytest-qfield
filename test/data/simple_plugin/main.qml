@@ -18,6 +18,7 @@ Item {
         round: true
         onClicked: {
             iface.logMessage("Plugin button clicked!");
+            iface.mainWindow().displayToast("Toast displayed!")
         }
     }
 
