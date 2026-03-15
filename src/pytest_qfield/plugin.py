@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -30,6 +30,7 @@ from pytest_qfield.qfieldbot import QFieldBot
 from pytest_qfield.stub_interface.qfield_stubs import (
     QFieldAppInterfaceStub,
     QFieldPlatformUtilitiesStub,
+    QFieldStringUtilsStub,
 )
 from pytest_qfield.stub_interface.qgis_stubs import QgsProjectStub, QSettingsStub
 
@@ -55,6 +56,7 @@ def qfield_bot(  # noqa: PLR0913
     qfield_iface: QFieldAppInterfaceStub,
     qfield_platform_utilities_stub: QFieldPlatformUtilitiesStub,
     qgs_project_stub: QgsProjectStub,
+    qfield_string_utils_stub: QFieldStringUtilsStub,
     register_qfield_resources: None,  # noqa: ARG001
     register_qfield_types: Callable,
     register_qgis_types: Callable,
@@ -64,7 +66,7 @@ def qfield_bot(  # noqa: PLR0913
     request: "SubRequest",
     qfield_qml_extra_context_properties: dict[str, object],
     tmp_path: "Path",
-) -> "QFieldBot":
+) -> Iterator["QFieldBot"]:
     """Fixture used to create a QFieldBot instance for using during testing."""
     qfield_import_path = _get_qfied_import_path(request)
 
@@ -86,6 +88,7 @@ def qfield_bot(  # noqa: PLR0913
         "qgisProject": qgs_project_stub,
         "systemFontPointSize": system_font_point_size,
         "settings": QSettingsStub(),
+        "StringUtils": qfield_string_utils_stub,
         **qfield_qml_extra_context_properties,
     }
 
@@ -106,7 +109,8 @@ def qfield_bot(  # noqa: PLR0913
     # Load the main window
     qfield_iface.set_main_window(qfield_bot.load_qml(main_window_qml_path))
 
-    return qfield_bot
+    # Yielding to keep stub instances alive
+    yield qfield_bot  # noqa: PT022
 
 
 @pytest.fixture
@@ -153,6 +157,16 @@ def qgs_project_stub() -> QgsProjectStub:
     Override this fixture to use an extended version of the class if needed.
     """
     return QgsProjectStub()
+
+
+@pytest.fixture
+def qfield_string_utils_stub() -> QFieldStringUtilsStub:
+    """
+    Stub implementation for StringUtils.
+
+    Override this fixture to use an extended version of the class if needed.
+    """
+    return QFieldStringUtilsStub()
 
 
 @pytest.fixture

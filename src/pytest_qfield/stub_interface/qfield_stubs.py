@@ -15,6 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
+import uuid
 
 from PyQt6.QtCore import QObject, QSizeF, pyqtSlot
 from PyQt6.QtQuick import QQuickItem, QQuickWindow
@@ -23,6 +24,8 @@ from PyQt6.QtQuick import QQuickItem, QQuickWindow
 class QFieldAppInterfaceStub(QObject):
     """
     Stub implementation of AppInterface.
+
+    https://api.qfield.org/QField/classAppInterface/
     """
 
     def __init__(self) -> None:
@@ -92,3 +95,15 @@ class QFieldPlatformUtilitiesStub(QObject):
     @pyqtSlot(result=bool)
     def isSystemDarkTheme(self) -> bool:
         return False
+
+
+class QFieldStringUtilsStub(QObject):
+    """
+    String utilities stub.
+
+    https://api.qfield.org/QField/classStringUtils/
+    """
+
+    @pyqtSlot(result=str)
+    def createUuid(self) -> str:
+        return f"{{{uuid.uuid4()}}}"

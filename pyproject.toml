@@ -60,6 +60,7 @@ development = [
     "pytest-cov",
     "pytest-dotenv",
     "pytest-subtests",
+    "pytest-mock>=3.15.1",
     # Linting
     "mypy",
     "pre-commit",

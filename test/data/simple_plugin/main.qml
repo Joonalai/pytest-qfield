@@ -21,7 +21,10 @@ Item {
         iconColor: Theme.mainColor
         round: true
         onClicked: {
+            const value = StringUtils.createUuid();
+
             iface.logMessage("Plugin button clicked!");
+            iface.logMessage("UUID value:", value);
             iface.mainWindow().displayToast("Toast displayed!")
         }
     }

@@ -24,7 +24,9 @@ from pytest_qfield.stub_interface.qgis_stubs import QgsVectorLayerStub
 
 if TYPE_CHECKING:
     from pathlib import Path
+    from unittest.mock import MagicMock
 
+    from pytest_mock import MockerFixture
     from pytest_subtests import SubTests
 
     from pytest_qfield.qfieldbot import QFieldBot
@@ -39,6 +41,11 @@ def js_directory(data_path: "Path") -> "Path":
 
 
 @pytest.fixture
+def mock_uuid_value(mocker: "MockerFixture") -> str:
+    return mocker.patch("uuid.uuid4", return_value="random-uuid-value")
+
+
+@pytest.fixture
 def load_plugin(qfield_bot: "QFieldBot", data_path: "Path"):
     qfield_bot.load_plugin(
         data_path / "simple_plugin" / "main.qml", raise_if_warnings=True
@@ -47,12 +54,19 @@ def load_plugin(qfield_bot: "QFieldBot", data_path: "Path"):
 
 
 @pytest.mark.usefixtures("load_plugin")
-def test_qfield_bot_should_load_plugin(qfield_bot: "QFieldBot", subtests: "SubTests"):
+def test_qfield_bot_should_load_plugin(
+    qfield_bot: "QFieldBot", subtests: "SubTests", mock_uuid_value: "MagicMock"
+):
     with subtests.test("button can be clicked"):
         button = qfield_bot.get_item("pluginButton")
         qfield_bot.click_item(button)
     with subtests.test("plugin log message is correct"):
-        assert qfield_bot.iface.logged_messages == ["Plugin button clicked!"]
+        mock_uuid_value.assert_called_once()
+        assert qfield_bot.iface.logged_messages == [
+            "Plugin button clicked!",
+            "UUID value:",
+            "{random-uuid-value}",
+        ]
         assert qfield_bot.iface.toast_messages == ["Toast displayed!"]
     # Inspect visually that the button exists and the toast is visible
     # qfield_bot.qtbot.sleep(10000)
