@@ -17,3 +17,8 @@ function getLayer(name) {
     }
     return layer
 }
+
+function sum(x, y) {
+    iface.logMessage(`Summing ${x} and ${y}`)
+    return x + y
+}

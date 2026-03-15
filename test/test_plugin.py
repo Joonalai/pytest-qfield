@@ -72,6 +72,20 @@ def test_load_js_function(qfield_bot: "QFieldBot", js_directory: "Path"):
     ]
 
 
+def test_load_js_function_with_two_params(
+    qfield_bot: "QFieldBot", js_directory: "Path"
+):
+    js_object = qfield_bot.load_js_function(
+        js_directory / "jslogic.js",
+        "sum",
+        ["x", "y"],
+        extra_files=[js_directory / "another_file.js"],
+    )
+    result = js_object.call(1, 2)
+    assert qfield_bot.iface.logged_messages == ["Summing 1 and 2"]
+    assert result == 3
+
+
 def test_qgis_project_map_layers_by_name(
     qfield_bot: "QFieldBot",
     qgs_project_stub: "QgsProjectStub",
