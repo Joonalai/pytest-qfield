@@ -75,8 +75,17 @@ class QFieldAppInterfaceStub(QObject):
         _item.setParentItem(toolbar_row)
 
     @pyqtSlot(str)
-    def logMessage(self, message: str) -> None:
-        self.logged_messages.append(message)
+    @pyqtSlot(str, str)
+    @pyqtSlot(str, str, str)
+    @pyqtSlot(str, str, str, str)
+    @pyqtSlot(str, str, str, str, str)
+    @pyqtSlot(str, str, str, str, str, str)
+    @pyqtSlot(str, str, str, str, str, str, str)
+    @pyqtSlot(str, str, str, str, str, str, str, str)
+    @pyqtSlot(str, str, str, str, str, str, str, str, str)
+    @pyqtSlot(str, str, str, str, str, str, str, str, str, str)
+    def logMessage(self, *messages: str) -> None:
+        self.logged_messages.extend(messages)
 
 
 class QFieldPlatformUtilitiesStub(QObject):
