@@ -17,7 +17,7 @@
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
 import uuid
 
-from PyQt6.QtCore import QObject, QSizeF, pyqtSlot
+from PyQt6.QtCore import QObject, QSizeF, pyqtSignal, pyqtSlot
 from PyQt6.QtQuick import QQuickItem, QQuickWindow
 
 
@@ -27,6 +27,8 @@ class QFieldAppInterfaceStub(QObject):
 
     https://api.qfield.org/QField/classAppInterface/
     """
+
+    loadProjectEnded = pyqtSignal()  # noqa: N815
 
     def __init__(self) -> None:
         super().__init__()
