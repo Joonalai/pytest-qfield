@@ -54,17 +54,18 @@ env_files = [".env"]
 
 
 [tool.uv]
-default-groups = ["development"]
+default-groups = ["dev", "lint"]
 
 [dependency-groups]
-development = [
+dev = [
     "pytest-cov",
     "pytest-dotenv",
     "pytest-subtests",
     "pytest-mock>=3.15.1",
-    # Linting
+    ]
+Lint = [
     "mypy",
-    "pre-commit",
+    "prek",
     "ruff",
 ]
 
