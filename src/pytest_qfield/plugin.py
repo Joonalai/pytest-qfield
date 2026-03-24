@@ -86,7 +86,7 @@ def qfield_bot(  # noqa: PLR0913
     qfield_qml_extra_context_properties: dict[str, object],
     tmp_path: "Path",
 ) -> Iterator["QFieldBot"]:
-    """Fixture used to create a QFieldBot instance for using during testing."""
+    """Fixture used to create a QFieldBot instance for use during testing."""
     qfield_import_path = _get_qfied_import_path(request)
 
     engine = QQmlApplicationEngine()
@@ -236,7 +236,7 @@ def qfield_feature_utils_stub() -> QFieldFeatureUtilsStub:
 @pytest.fixture
 def qfield_geometry_utils_stub() -> QFieldGeometryUtilsStub:
     """
-    Stub implementation for FeatureUtils.
+    Stub implementation for GeometryUtils.
 
     Override this fixture to use an extended version of the class if needed.
     """
