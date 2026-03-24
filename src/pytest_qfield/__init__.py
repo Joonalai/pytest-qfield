@@ -15,5 +15,3 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
-
-__version__ = "0.0.1dev"
