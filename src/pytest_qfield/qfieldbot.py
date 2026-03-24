@@ -19,6 +19,7 @@ import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
+import pytest_qgis.utils
 from PyQt6.QtCore import QObject, QPointF, Qt, QtMsgType, QUrl
 from PyQt6.QtQml import QQmlComponent
 from PyQt6.QtQuick import QQuickItem
@@ -186,6 +187,11 @@ class QFieldBot:
             raise ValueError(f"QML file {qml_file} did not load successfully!")
 
         return self._qml_engine.rootObjects()[-1]
+
+    def set_map_crs_based_on_layers(self) -> None:
+        """Set map crs based on layers of the project."""
+        # Copied here for convenience
+        pytest_qgis.utils.set_map_crs_based_on_layers()
 
     def _ensure_plugin_loaded(self) -> None:
         if not self._plugin_loaded:

@@ -27,7 +27,6 @@ if TYPE_CHECKING:
     from pathlib import Path
     from unittest.mock import MagicMock
 
-    from pytest_mock import MockerFixture
     from pytest_subtests import SubTests
 
     from pytest_qfield.qfieldbot import QFieldBot
@@ -41,20 +40,7 @@ def js_directory(data_path: "Path") -> "Path":
     return js_directory
 
 
-@pytest.fixture
-def mock_uuid_value(mocker: "MockerFixture") -> str:
-    return mocker.patch("uuid.uuid4", return_value="random-uuid-value")
-
-
-@pytest.fixture
-def load_plugin(qfield_bot: "QFieldBot", data_path: "Path"):
-    qfield_bot.load_plugin(
-        data_path / "simple_plugin" / "main.qml", raise_if_warnings=True
-    )
-    qfield_bot.show_window()
-
-
-@pytest.mark.usefixtures("load_plugin")
+@pytest.mark.usefixtures("load_simple_plugin")
 def test_qfield_bot_should_load_plugin(
     qfield_bot: "QFieldBot", subtests: "SubTests", mock_uuid_value: "MagicMock"
 ):
