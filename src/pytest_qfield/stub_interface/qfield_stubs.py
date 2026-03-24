@@ -20,6 +20,13 @@ from typing import TYPE_CHECKING
 
 from PyQt6.QtCore import QObject, QSizeF, pyqtSignal, pyqtSlot
 from PyQt6.QtQuick import QQuickItem
+from qgis.core import QgsFeatureRequest, QgsGeometry, QgsVectorLayerUtils
+
+from pytest_qfield.stub_interface.qgis_stubs import (
+    QgsFeatureStub,
+    QgsGeometryStub,
+    QgsVectorLayerStub,
+)
 
 if TYPE_CHECKING:
     from qgis.gui import QgisInterface
@@ -32,7 +39,7 @@ class QFieldAppInterfaceStub(QObject):
     https://api.qfield.org/QField/classAppInterface/
     """
 
-    loadProjectEnded = pyqtSignal()  # noqa: N815
+    loadProjectEnded = pyqtSignal()
 
     def __init__(self, qgis_iface: "QgisInterface") -> None:
         super().__init__(parent=None)
@@ -87,11 +94,6 @@ class QFieldAppInterfaceStub(QObject):
 
     @pyqtSlot(result=QObject)
     def mapCanvas(self) -> QObject:
-        # host_item = self.qml_main_window.findChild(QObject, "host")
-        # if host_item is not None:
-        #     return host_item
-        # if self.qgis_map_canvas is not None:
-        #     return self.qgis_map_canvas
         return self.qml_main_window
 
     @pyqtSlot(QObject)
@@ -124,7 +126,7 @@ class QFieldPlatformUtilitiesStub(QObject):
 
 class QFieldStringUtilsStub(QObject):
     """
-    String utilities stub.
+    StringUtils stub.
 
     https://api.qfield.org/QField/classStringUtils/
     """
@@ -132,3 +134,97 @@ class QFieldStringUtilsStub(QObject):
     @pyqtSlot(result=str)
     def createUuid(self) -> str:
         return f"{{{uuid.uuid4()}}}"
+
+
+class QFieldGeometryUtilsStub(QObject):
+    """
+    GeometryUtils stub
+
+    https://api.qfield.org/QField/classGeometryUtils/
+    """
+
+    # TODO: add point method
+
+    @pyqtSlot(str, result=QObject)
+    def createGeometryFromWkt(self, wkt: str) -> QgsGeometryStub:
+        geometry_stub = QgsGeometryStub(QgsGeometry.fromWkt(wkt))
+        geometry_stub.setParent(self)
+        return geometry_stub
+
+
+class QFieldLayerUtilsStub(QObject):
+    """
+    LayerUtils stub.
+
+    https://api.qfield.org/QField/classLayerUtils
+    """
+
+    @pyqtSlot(QObject, QObject, result=bool)
+    def addFeature(self, layer: QgsVectorLayerStub, feature: QgsFeatureStub) -> bool:
+        return layer.qgis_layer.addFeature(feature.qgis_feature)
+
+    @pyqtSlot(QObject, str, result=QObject)
+    def createFeatureIteratorFromExpression(
+        self,
+        layer: QgsVectorLayerStub,
+        expression: str,
+    ) -> "FeatureIteratorStub":
+        iterator_stub = FeatureIteratorStub(
+            layer, QgsFeatureRequest().setFilterExpression(expression)
+        )
+        iterator_stub.setParent(self)
+        return iterator_stub
+
+    def get_iterators(self) -> list["FeatureIteratorStub"]:
+        return self.findChildren(FeatureIteratorStub)
+
+    def clear_iterators(self) -> None:
+        for child in self.findChildren(FeatureIteratorStub):
+            child.setParent(None)
+            child.deleteLater()
+
+
+class FeatureIteratorStub(QObject):
+    """FeatureIterator stub."""
+
+    def __init__(self, layer: QgsVectorLayerStub, request: QgsFeatureRequest) -> None:
+        super().__init__(parent=None)
+        self.layer = layer
+        self.request = request
+        self._features = list(layer.qgis_layer.getFeatures(self.request))
+        self.iterated_count = 0
+        self.closed = False
+
+    @pyqtSlot(result=bool)
+    def hasNext(self) -> bool:
+        return len(self._features) > 0 and self.iterated_count < len(self._features) + 1
+
+    @pyqtSlot(result=QObject)
+    def next(self) -> QgsFeatureStub:
+        self.iterated_count += 1
+        feature_stub = QgsFeatureStub(self._features[self.iterated_count - 1])
+        feature_stub.setParent(self)
+        return feature_stub
+
+    @pyqtSlot()
+    def close(self) -> None:
+        self.closed = True
+
+
+class QFieldFeatureUtilsStub(QObject):
+    """FeatureUtils stub.
+
+    https://api.qfield.org/QField/classFeatureUtils/
+    """
+
+    @pyqtSlot(QObject, result=QObject)
+    @pyqtSlot(QObject, QObject, result=QObject)
+    def createFeature(
+        self, layer: QgsVectorLayerStub, geometry: QgsGeometryStub | None = None
+    ) -> QgsFeatureStub:
+        feature = QgsVectorLayerUtils.createFeature(
+            layer.qgis_layer, geometry=geometry.qgis_geometry if geometry else None
+        )
+        stub = QgsFeatureStub(feature)
+        stub.setParent(self)
+        return stub

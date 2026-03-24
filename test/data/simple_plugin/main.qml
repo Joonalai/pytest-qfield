@@ -10,6 +10,12 @@ Item {
 
     Component.onCompleted: {
         iface.addItemToPluginsToolbar(pluginButton);
+
+        function projectLoaded() {
+            iface.logMessage("Project load ended");
+        }
+
+        iface.loadProjectEnded.connect(projectLoaded);
     }
 
     QfToolButton {

@@ -50,13 +50,12 @@ def test_qfield_bot_should_load_plugin(
     with subtests.test("plugin log message is correct"):
         mock_uuid_value.assert_called_once()
         assert qfield_bot.iface.logged_messages == [
+            "Project load ended",
             "Plugin button clicked!",
             "UUID value:",
             "{random-uuid-value}",
         ]
         assert qfield_bot.iface.toast_messages == ["Toast displayed!"]
-    # Inspect visually that the button exists and the toast is visible
-    # qfield_bot.qtbot.sleep(10000)
 
 
 def test_load_js_function(qfield_bot: "QFieldBot", js_directory: "Path"):

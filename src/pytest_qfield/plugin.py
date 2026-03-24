@@ -33,6 +33,9 @@ from qgis._core import QgsProject
 from pytest_qfield.qfieldbot import QFieldBot
 from pytest_qfield.stub_interface.qfield_stubs import (
     QFieldAppInterfaceStub,
+    QFieldFeatureUtilsStub,
+    QFieldGeometryUtilsStub,
+    QFieldLayerUtilsStub,
     QFieldPlatformUtilitiesStub,
     QFieldStringUtilsStub,
 )
@@ -70,6 +73,9 @@ def qfield_bot(  # noqa: PLR0913
     qfield_platform_utilities_stub: QFieldPlatformUtilitiesStub,
     qgs_project_stub: QgsProjectStub,
     qfield_string_utils_stub: QFieldStringUtilsStub,
+    qfield_layer_utils_stub: QFieldLayerUtilsStub,
+    qfield_feature_utils_stub: QFieldFeatureUtilsStub,
+    qfield_geometry_utils_stub: QFieldGeometryUtilsStub,
     register_qfield_resources: None,  # noqa: ARG001
     register_qfield_types: Callable,
     register_qgis_types: Callable,
@@ -102,6 +108,9 @@ def qfield_bot(  # noqa: PLR0913
         "systemFontPointSize": system_font_point_size,
         "settings": QSettingsStub(),
         "StringUtils": qfield_string_utils_stub,
+        "LayerUtils": qfield_layer_utils_stub,
+        "FeatureUtils": qfield_feature_utils_stub,
+        "GeometryUtils": qfield_geometry_utils_stub,
         **qfield_qml_extra_context_properties,
     }
 
@@ -194,6 +203,44 @@ def qfield_string_utils_stub() -> QFieldStringUtilsStub:
     Override this fixture to use an extended version of the class if needed.
     """
     return QFieldStringUtilsStub()
+
+
+@pytest.fixture(autouse=True)
+def qfield_layer_utils_stub() -> Iterator[QFieldLayerUtilsStub]:
+    """
+    Stub implementation for LayerUtils.
+
+    Override this fixture to use an extended version of the class if needed.
+    """
+    layer_utils_stub = QFieldLayerUtilsStub()
+    yield layer_utils_stub
+    iterators = layer_utils_stub.get_iterators()
+    try:
+        for iterator in iterators:
+            if not iterator.closed:
+                raise AssertionError("Iterator was not closed")
+    finally:
+        layer_utils_stub.clear_iterators()
+
+
+@pytest.fixture
+def qfield_feature_utils_stub() -> QFieldFeatureUtilsStub:
+    """
+    Stub implementation for FeatureUtils.
+
+    Override this fixture to use an extended version of the class if needed.
+    """
+    return QFieldFeatureUtilsStub()
+
+
+@pytest.fixture
+def qfield_geometry_utils_stub() -> QFieldGeometryUtilsStub:
+    """
+    Stub implementation for FeatureUtils.
+
+    Override this fixture to use an extended version of the class if needed.
+    """
+    return QFieldGeometryUtilsStub()
 
 
 @pytest.fixture

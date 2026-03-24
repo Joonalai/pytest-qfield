@@ -23,9 +23,6 @@ import pytest
 from pytest_field_test_utils.env import IN_CI
 
 if TYPE_CHECKING:
-    from unittest.mock import MagicMock
-
-    from pytest_subtests import SubTests
     from qgis.core import QgsVectorLayer
 
     from pytest_qfield.qfieldbot import QFieldBot
@@ -36,22 +33,9 @@ DEFAULT_TIMEOUT = 0.01 if IN_CI else 1
 
 @pytest.mark.qgis_show_map(DEFAULT_TIMEOUT)
 @pytest.mark.usefixtures("load_simple_plugin")
-def test_qfield_bot_should_load_plugin(
-    qfield_bot: "QFieldBot", subtests: "SubTests", mock_uuid_value: "MagicMock"
-):
-    with subtests.test("button can be clicked"):
-        button = qfield_bot.get_item("pluginButton")
-        qfield_bot.click_item(button)
-    with subtests.test("plugin log message is correct"):
-        mock_uuid_value.assert_called_once()
-        assert qfield_bot.iface.logged_messages == [
-            "Plugin button clicked!",
-            "UUID value:",
-            "{random-uuid-value}",
-        ]
-        assert qfield_bot.iface.toast_messages == ["Toast displayed!"]
+def test_qfield_bot_should_load_plugin(qfield_bot: "QFieldBot"):
     # Inspect visually that the button exists and the toast is visible
-    qfield_bot.qtbot.wait(DEFAULT_TIMEOUT * 1000)
+    qfield_bot.click_item(qfield_bot.get_item("pluginButton"))
 
 
 @pytest.mark.qgis_show_map(DEFAULT_TIMEOUT)

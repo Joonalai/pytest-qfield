@@ -88,7 +88,10 @@ class QFieldBot:
         self.iface.show()
 
     def load_plugin(
-        self, qfield_plugin_qml_file: Path, raise_if_warnings: bool = True
+        self,
+        qfield_plugin_qml_file: Path,
+        raise_if_warnings: bool = True,
+        emit_load_project_ended: bool = True,
     ) -> None:
         """
         Load a QField plugin QML file into the QML engine and wait for it to be loaded.
@@ -96,6 +99,8 @@ class QFieldBot:
         :param qfield_plugin_qml_file: Path to the QML file to load.
         :param raise_if_warnings: Whether to raise an exception
                 if any warnings or errors are logged during loading.
+        :param emit_load_project_ended: Whether to emit the loadProjectEnded
+                signal on iface.
         """
 
         self._plugin_root_object = self.load_qml(
@@ -103,6 +108,12 @@ class QFieldBot:
         )
         self.iface.set_qml_root(self._plugin_root_object)
         self._plugin_loaded = True
+        if emit_load_project_ended:
+            self.emit_load_project_ended()
+
+    def emit_load_project_ended(self) -> None:
+        """Emit the loadProjectEnded signal on iface after initial setup."""
+        self.iface.loadProjectEnded.emit()
 
     def load_js_function(
         self,

@@ -18,10 +18,17 @@
 
 from typing import TYPE_CHECKING, Any
 
-from PyQt6.QtCore import QObject, QSettings, QVariant, pyqtProperty, pyqtSlot
+from PyQt6.QtCore import (
+    QObject,
+    QSettings,
+    QVariant,
+    pyqtProperty,
+    pyqtSignal,
+    pyqtSlot,
+)
 
 if TYPE_CHECKING:
-    from qgis.core import QgsProject, QgsVectorLayer
+    from qgis.core import QgsFeature, QgsGeometry, QgsProject, QgsVectorLayer
 
 
 class QgsVectorLayerStub(QObject):
@@ -29,9 +36,12 @@ class QgsVectorLayerStub(QObject):
     Stub implementation of QgsVectorLayer.
     """
 
+    featureAdded = pyqtSignal(int)
+
     def __init__(self, qgis_layer: "QgsVectorLayer") -> None:
         super().__init__(parent=qgis_layer)
         self.qgis_layer = qgis_layer
+        self.qgis_layer.featureAdded.connect(self.featureAdded.emit)
 
     @pyqtProperty(str)
     def name(self) -> str:
@@ -42,6 +52,15 @@ class QgsVectorLayerStub(QObject):
         # For some reason isValid is not a function,
         # but an attribute (or a property in python)
         return self.qgis_layer.isValid()
+
+    @pyqtSlot(result=bool)
+    def startEditing(self) -> bool:
+        return self.qgis_layer.startEditing()
+
+    @pyqtSlot(result=bool)
+    def commitChanges(self) -> bool:
+        # TODO: stop editing or not?
+        return self.qgis_layer.commitChanges(stopEditing=False)
 
 
 class QgsProjectStub(QObject):
@@ -63,3 +82,40 @@ class QSettingsStub(QSettings):
     @pyqtSlot(str, "QVariant", result="QVariant")
     def value(self, key: str, default_value: Any = None) -> "QVariant":  # noqa: ANN401
         return super().value(key, default_value)
+
+
+class QgsFeatureStub(QObject):
+    def __init__(self, qgis_feature: "QgsFeature") -> None:
+        super().__init__(parent=None)
+        self.qgis_feature = qgis_feature
+
+    @pyqtProperty(int)
+    def id(self) -> int:
+        return self.qgis_feature.id()
+
+    @pyqtSlot(str, result="QVariant")
+    def attribute(self, attribute_name: str) -> str | int | float | bool | None:
+        return self.qgis_feature[attribute_name]
+
+    @pyqtSlot(str, QVariant)
+    def setAttribute(self, attribute_name: str, raw_value: QVariant | str) -> None:
+        value = raw_value.value() if isinstance(raw_value, QVariant) else raw_value
+        self.qgis_feature.setAttribute(
+            self.qgis_feature.fieldNameIndex(attribute_name), value
+        )
+
+    @pyqtProperty(QObject)
+    def geometry(self) -> "QgsGeometryStub":
+        geometry_stub = QgsGeometryStub(self.qgis_feature.geometry())
+        geometry_stub.setParent(self)
+        return geometry_stub
+
+
+class QgsGeometryStub(QObject):
+    def __init__(self, qgis_geometry: "QgsGeometry") -> None:
+        super().__init__(parent=None)
+        self.qgis_geometry = qgis_geometry
+
+    @pyqtSlot(int, result=str)
+    def asWkt(self, precision: int) -> str:
+        return self.qgis_geometry.asWkt(precision)
