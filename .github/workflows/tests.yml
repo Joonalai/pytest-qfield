@@ -1,0 +1,52 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - '.github/workflows/tests.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - '.github/workflows/tests.yml'
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    container:
+      image: qgis/qgis:${{ matrix.qgis-image-tags }}
+    strategy:
+      matrix:
+        qgis-image-tags: ["4.0-questing"]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v6
+      - name: Checkout QField
+        uses: actions/checkout@v6
+        with:
+          repository: opengisch/QField
+          path: QField
+          ref: v4.0.6
+
+      - name: Install venv
+        run: |
+          apt update
+          apt install -y python3-venv curl
+
+      - name: Create virtualenv and install dependencies
+        run: |
+          python3 -m venv --system-site-packages .venv
+          .venv/bin/pip3 install -q -U uv
+          .venv/bin/uv sync
+
+      - name: Run tests
+        env:
+          QFIELD_IMPORTS_DIR: "${{ github.workspace }}/QField/src/qml/imports"
+          QGIS_IN_CI: 1
+        run: |
+          .venv/bin/uv run pytest -v --qgis_disable_gui test
