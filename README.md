@@ -7,6 +7,7 @@ A [pytest](https://docs.pytest.org) plugin for testing [QField](https://github.c
 
 
 ## Inspirations
+- [pytest-qgis](https://github.com/osgeosuomi/pytest-qgis)
 - [pytest-qt](https://github.com/pytest-dev/pytest-qt)
 - [This Stackoverflow answer](https://stackoverflow.com/a/71832084)
 

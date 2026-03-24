@@ -29,7 +29,8 @@ classifiers = [
 ]
 dependencies = [
     "pytest-qt",
-    "PyQt6"
+    "pytest-qgis",
+    "PyQt6==6.9.1"
 ]
 
 [tool.setuptools.dynamic]
