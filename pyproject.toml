@@ -1,18 +1,12 @@
-[build-system]
-requires = ["setuptools", "setuptools-scm"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "pytest-qfield"
 description = "A pytest plugin for testing QField qml plugins"
 readme = "README.md"
-
-dynamic = ["version"]
+version = "0.0.1.dev1"
 keywords = ["pytest", "QField", "GIS"]
-
-requires-python = ">=3.10"
-license = "GPL-2.0"
+license = "GPL-2.0-only"
 license-files = ["LICENSE"]
+requires-python = ">=3.10"
 classifiers = [
     "Framework :: Pytest",
     "Intended Audience :: Developers",
@@ -29,21 +23,27 @@ classifiers = [
 ]
 dependencies = [
     "pytest-qt",
-    "pytest-qgis",
+    "pytest-qgis>=3.0.1",
     "PyQt6==6.9.1"
 ]
 
-[tool.setuptools.dynamic]
-version = { attr = "pytest_qfield.__version__" }
+[project.urls]
+homepage = "https://github.com/Joonalai/pytest-qfield"
+repository = "https://github.com/Joonalai/pytest-qfield"
 
-[tool.setuptools.package-data]
-pytest_qfield = [
-    "py.typed",
-    "*.qml",
-]
+[build-system]
+requires = ["uv_build>=0.10.9,<0.11.0"]
+build-backend = "uv_build"
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.uv.build-backend]
+module-name = "pytest_qfield"
+include = ["**/py.typed", "**/*.qml"]
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true
 
 [project.entry-points.pytest11]
 pytest-qfield = "pytest_qfield.plugin"

@@ -480,6 +480,7 @@ wheels = [
 
 [[package]]
 name = "pytest-qfield"
+version = "0.0.1.dev1"
 source = { editable = "." }
 dependencies = [
     { name = "pyqt6" },
@@ -503,7 +504,7 @@ lint = [
 [package.metadata]
 requires-dist = [
     { name = "pyqt6", specifier = "==6.9.1" },
-    { name = "pytest-qgis" },
+    { name = "pytest-qgis", specifier = ">=3.0.1" },
     { name = "pytest-qt" },
 ]
 
