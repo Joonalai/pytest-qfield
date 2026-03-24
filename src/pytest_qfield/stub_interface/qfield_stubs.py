@@ -16,9 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
 import uuid
+from typing import TYPE_CHECKING
 
 from PyQt6.QtCore import QObject, QSizeF, pyqtSignal, pyqtSlot
-from PyQt6.QtQuick import QQuickItem, QQuickWindow
+from PyQt6.QtQuick import QQuickItem
+
+if TYPE_CHECKING:
+    from qgis.gui import QgisInterface
 
 
 class QFieldAppInterfaceStub(QObject):
@@ -30,28 +34,45 @@ class QFieldAppInterfaceStub(QObject):
 
     loadProjectEnded = pyqtSignal()  # noqa: N815
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, qgis_iface: "QgisInterface") -> None:
+        super().__init__(parent=None)
         self.added_item_count = 0
         self.logged_messages: list[str] = []
+        self.qgis_iface = qgis_iface
 
-        self._main_window: QQuickWindow | None = None
+        self._qgis_main_window: QObject | None = None
+        self._qml_main_window: QObject | None = None
+        self.qgis_map_canvas = qgis_iface.mapCanvas()
 
     @property
     def toast_messages(self) -> list[str]:
-        return self.mainWindow().property("toastMessages").toVariant()
+        toast_messages = self.qml_main_window.property("toastMessages")
+        if hasattr(toast_messages, "toVariant"):
+            return toast_messages.toVariant()
+        return toast_messages
 
-    def set_main_window(self, main_window: "QQuickWindow") -> None:
-        self._main_window = main_window
+    @property
+    def qml_main_window(self) -> QObject:
+        if self._qml_main_window is None:
+            raise ValueError("Add QML main window via set_main_window method first!")
+        return self._qml_main_window
+
+    def set_main_window(
+        self, qgis_main_window: QObject, qml_main_window: QObject
+    ) -> None:
+        self._qgis_main_window = qgis_main_window
+        self._qml_main_window = qml_main_window
 
     def show(self) -> None:
-        self.mainWindow().show()
+        if self._qgis_main_window is None:
+            raise ValueError("Add mainWindow via set_main_window method first!")
+        self._qgis_main_window.show()
 
     def set_qml_root(self, root: QObject) -> None:
         if not isinstance(root, QQuickItem):
             raise TypeError(f"Unsupported root type: {type(root)}")
 
-        scene_root = self.mainWindow().findChild(QObject, "host")
+        scene_root = self.qml_main_window.findChild(QObject, "host")
         if scene_root is None:
             raise RuntimeError("Could not find host item in main window")
         if not isinstance(scene_root, QQuickItem):
@@ -61,19 +82,21 @@ class QFieldAppInterfaceStub(QObject):
         root.setSize(scene_root.size())
 
     @pyqtSlot(result=QObject)
-    def mainWindow(self) -> "QQuickWindow":
-        if self._main_window is None:
-            raise ValueError("Add mainWindow via set_main_window method first!")
-        return self._main_window
+    def mainWindow(self) -> QObject:
+        return self.qml_main_window
 
     @pyqtSlot(result=QObject)
     def mapCanvas(self) -> QObject:
-        # Return a QQuickItem to be used as a QML parent
-        return self.mainWindow()
+        # host_item = self.qml_main_window.findChild(QObject, "host")
+        # if host_item is not None:
+        #     return host_item
+        # if self.qgis_map_canvas is not None:
+        #     return self.qgis_map_canvas
+        return self.qml_main_window
 
     @pyqtSlot(QObject)
     def addItemToPluginsToolbar(self, _item: "QQuickItem") -> None:
-        toolbar_row = self.mainWindow().findChild(QObject, "pluginsToolbarRow")
+        toolbar_row = self.qml_main_window.findChild(QObject, "pluginsToolbarRow")
         if toolbar_row is None:
             raise RuntimeError("Plugins toolbar row not found")
         _item.setSize(QSizeF(48, 48))

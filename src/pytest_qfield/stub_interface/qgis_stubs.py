@@ -16,9 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from PyQt6.QtCore import QObject, QSettings, QVariant, pyqtProperty, pyqtSlot
+
+if TYPE_CHECKING:
+    from qgis.core import QgsProject, QgsVectorLayer
 
 
 class QgsVectorLayerStub(QObject):
@@ -26,20 +29,19 @@ class QgsVectorLayerStub(QObject):
     Stub implementation of QgsVectorLayer.
     """
 
-    def __init__(self, layer_name: str, is_valid: bool) -> None:
-        super().__init__()
-        self._layer_name = layer_name
-        self._is_valid = is_valid
+    def __init__(self, qgis_layer: "QgsVectorLayer") -> None:
+        super().__init__(parent=qgis_layer)
+        self.qgis_layer = qgis_layer
 
     @pyqtProperty(str)
     def name(self) -> str:
-        return self._layer_name
+        return self.qgis_layer.name()
 
     @pyqtProperty(bool)
     def isValid(self) -> bool:
         # For some reason isValid is not a function,
         # but an attribute (or a property in python)
-        return self._is_valid
+        return self.qgis_layer.isValid()
 
 
 class QgsProjectStub(QObject):
@@ -47,15 +49,13 @@ class QgsProjectStub(QObject):
     Stub implementation for QgsProject (qgisProject in QML).
     """
 
-    def __init__(self) -> None:
-        super().__init__()
-        self.map_layers: dict[str, Any] = {}
+    def __init__(self, qgis_project: "QgsProject") -> None:
+        super().__init__(parent=qgis_project)
+        self.qgis_project = qgis_project
 
     @pyqtSlot(str, result=list)
-    def mapLayersByName(self, name: str) -> list:
-        if name not in self.map_layers:
-            return []
-        return [self.map_layers[name]]
+    def mapLayersByName(self, name: str) -> list[QgsVectorLayerStub]:
+        return list(map(QgsVectorLayerStub, self.qgis_project.mapLayersByName(name)))
 
 
 class QSettingsStub(QSettings):

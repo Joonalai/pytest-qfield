@@ -21,10 +21,14 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
+from PyQt6.QtCore import QObject, Qt, QUrl
 from PyQt6.QtQml import (
     QQmlApplicationEngine,
     qmlRegisterType,
 )
+from PyQt6.QtQuickWidgets import QQuickWidget
+from PyQt6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget
+from qgis._core import QgsProject
 
 from pytest_qfield.qfieldbot import QFieldBot
 from pytest_qfield.stub_interface.qfield_stubs import (
@@ -40,6 +44,7 @@ if TYPE_CHECKING:
     from PyQt6.QtWidgets import QApplication
     from pytestqt.logging import _QtMessageCapture
     from pytestqt.qtbot import QtBot
+    from qgis.gui import QgisInterface, QgsMapCanvas
 
 _QFIELD_IMPORTS_DIR_ENV = "QFIELD_IMPORTS_DIR"
 _QFIELD_IMPORT_DIR_KEY = "qfield_imports_dir"
@@ -51,8 +56,16 @@ def qapp_args() -> list[str]:
 
 
 @pytest.fixture
+def qfield_new_project(qgis_new_project: "QgsProject") -> None:  # noqa: ARG001
+    """Initialize new QField project"""
+    return
+
+
+@pytest.fixture
 def qfield_bot(  # noqa: PLR0913
-    qapp: "QApplication",
+    qgis_app: "QApplication",
+    qgis_parent: QWidget,
+    qgis_canvas: "QgsMapCanvas",
     qfield_iface: QFieldAppInterfaceStub,
     qfield_platform_utilities_stub: QFieldPlatformUtilitiesStub,
     qgs_project_stub: QgsProjectStub,
@@ -79,7 +92,7 @@ def qfield_bot(  # noqa: PLR0913
     qfield_iface.setParent(engine)
     qfield_platform_utilities_stub.setParent(engine)
 
-    system_font_point_size = qapp.font().pointSizeF() + 2.0
+    system_font_point_size = qgis_app.font().pointSizeF() + 2.0
 
     # Inject context properties
     context_properties = {
@@ -106,9 +119,23 @@ def qfield_bot(  # noqa: PLR0913
         tmp_path=tmp_path,
     )
 
-    # Load the main window
-    qfield_iface.set_main_window(qfield_bot.load_qml(main_window_qml_path))
+    # Load and embed the QML shell in the pytest-qgis main window.
+    qml_overlay_widget, qml_main_window = _load_qml_overlay_widget(
+        qml_engine=engine,
+        main_window_qml_path=main_window_qml_path,
+        parent=qgis_parent,
+    )
 
+    _embed_qml_window_in_qgis_main_window(
+        qgis_parent=qgis_parent,
+        qgis_canvas=qgis_canvas,
+        qml_overlay_widget=qml_overlay_widget,
+    )
+
+    qfield_iface.set_main_window(
+        qgis_main_window=qgis_parent,
+        qml_main_window=qml_main_window,
+    )
     # Yielding to keep stub instances alive
     yield qfield_bot  # noqa: PT022
 
@@ -130,13 +157,13 @@ def main_window_qml_path() -> Path:
 
 
 @pytest.fixture
-def qfield_iface() -> QFieldAppInterfaceStub:
+def qfield_iface(qgis_iface: "QgisInterface") -> QFieldAppInterfaceStub:
     """
     Stub implementation for QFieldAppInterface.
 
     Override this fixture to use an extended version of the class if needed.
     """
-    return QFieldAppInterfaceStub()
+    return QFieldAppInterfaceStub(qgis_iface)
 
 
 @pytest.fixture
@@ -156,7 +183,7 @@ def qgs_project_stub() -> QgsProjectStub:
 
     Override this fixture to use an extended version of the class if needed.
     """
-    return QgsProjectStub()
+    return QgsProjectStub(QgsProject.instance())
 
 
 @pytest.fixture
@@ -253,3 +280,58 @@ def _get_qfied_import_path(request: "SubRequest") -> Path:
     if not (qfield_import_path / "Theme").exists():
         raise ValueError(f"{qfield_import_path / 'Theme'} does not exist!")
     return qfield_import_path
+
+
+def _embed_qml_window_in_qgis_main_window(
+    qgis_parent: QWidget,
+    qgis_canvas: "QgsMapCanvas",
+    qml_overlay_widget: QQuickWidget,
+) -> None:
+    # Keep QML as a toolbar strip and show QGIS canvas below it.
+    # Overlay transparency is not reliable across all Qt backends.
+    central_widget = QWidget(parent=qgis_parent)
+    central_layout = QVBoxLayout(central_widget)
+    central_layout.setContentsMargins(0, 0, 0, 0)
+    central_layout.setSpacing(0)
+
+    qml_overlay_widget.setParent(central_widget)
+    qml_overlay_widget.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+    qml_overlay_widget.setSizePolicy(
+        QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+    )
+    qml_overlay_widget.setFixedHeight(56)
+    central_layout.addWidget(qml_overlay_widget, 0)
+
+    qgis_canvas.setParent(central_widget)
+    qgis_canvas.setSizePolicy(
+        QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+    )
+    central_layout.addWidget(qgis_canvas, 1)
+
+    qgis_parent.setCentralWidget(central_widget)
+
+
+def _load_qml_overlay_widget(
+    qml_engine: QQmlApplicationEngine,
+    main_window_qml_path: Path,
+    parent: QWidget,
+) -> tuple[QQuickWidget, QObject]:
+    qml_overlay_widget = QQuickWidget(qml_engine, parent)
+    surface_format = qml_overlay_widget.format()
+    surface_format.setAlphaBufferSize(8)
+    qml_overlay_widget.setFormat(surface_format)
+    qml_overlay_widget.setResizeMode(QQuickWidget.ResizeMode.SizeRootObjectToView)
+    qml_overlay_widget.setAutoFillBackground(False)
+    qml_overlay_widget.setClearColor(Qt.GlobalColor.transparent)
+    qml_overlay_widget.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+    qml_overlay_widget.setStyleSheet("background: transparent;")
+    qml_overlay_widget.setSource(QUrl.fromLocalFile(str(main_window_qml_path)))
+
+    if qml_overlay_widget.status() == QQuickWidget.Status.Error:
+        errors = [error.toString() for error in qml_overlay_widget.errors()]
+        raise ValueError(f"QML file {main_window_qml_path} failed to load: {errors}")
+
+    root_object = qml_overlay_widget.rootObject()
+    if root_object is None:
+        raise ValueError(f"QML file {main_window_qml_path} did not load successfully!")
+    return qml_overlay_widget, root_object

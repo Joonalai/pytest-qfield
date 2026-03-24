@@ -19,6 +19,7 @@
 from typing import TYPE_CHECKING
 
 import pytest
+from qgis._core import QgsVectorLayer
 
 from pytest_qfield.stub_interface.qgis_stubs import QgsVectorLayerStub
 
@@ -100,6 +101,7 @@ def test_load_js_function_with_two_params(
     assert result == 3
 
 
+@pytest.mark.usefixtures("qfield_new_project")
 def test_qgis_project_map_layers_by_name(
     qfield_bot: "QFieldBot",
     qgs_project_stub: "QgsProjectStub",
@@ -116,12 +118,9 @@ def test_qgis_project_map_layers_by_name(
         assert not js_object.call("nonexistent")
 
     with subtests.test("QObject layer can be used"):
-        layer = QgsVectorLayerStub(layer_name="foo", is_valid=True)
-
-        qgs_project_stub.map_layers["foo"] = layer
+        layer = QgsVectorLayer("Point", "foo", "memory")
+        qgs_project_stub.qgis_project.addMapLayer(layer)
         returned_layer = js_object.call("foo")
-        assert returned_layer == layer
+        assert isinstance(returned_layer, QgsVectorLayerStub)
         assert returned_layer.name == "foo"
         assert qfield_bot.iface.logged_messages == ["Layer foo is valid!"]
-
-    qgs_project_stub.map_layers.clear()

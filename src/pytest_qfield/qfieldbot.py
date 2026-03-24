@@ -78,6 +78,7 @@ class QFieldBot:
         self.qtlog = qtlog
         self._tmp_path = tmp_path
         self._plugin_loaded = False
+        self._plugin_root_object: QObject | None = None
 
     def show_window(self) -> None:
         """
@@ -96,9 +97,10 @@ class QFieldBot:
                 if any warnings or errors are logged during loading.
         """
 
-        self.iface.set_qml_root(
-            self.load_qml(qfield_plugin_qml_file, raise_if_warnings)
+        self._plugin_root_object = self.load_qml(
+            qfield_plugin_qml_file, raise_if_warnings
         )
+        self.iface.set_qml_root(self._plugin_root_object)
         self._plugin_loaded = True
 
     def load_js_function(
@@ -190,7 +192,6 @@ class QFieldBot:
             raise ValueError("Plugin not loaded yet!")
 
     def _get_plugin_root_object(self) -> "QObject":
-        if not len(self._qml_engine.rootObjects()) > 1:
+        if self._plugin_root_object is None:
             raise ValueError("Plugin not loaded yet!")
-        # First object is mainWindow
-        return self._qml_engine.rootObjects()[1]
+        return self._plugin_root_object

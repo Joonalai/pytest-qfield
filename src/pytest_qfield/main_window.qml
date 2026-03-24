@@ -1,8 +1,7 @@
 import QtQuick
-import QtQuick.Window
 import Theme
 
-Window {
+Item {
     id: root
 
     property var toastMessages: []
