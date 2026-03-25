@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from PyQt6.QtCore import (
     QObject,
@@ -26,22 +26,20 @@ from PyQt6.QtCore import (
     pyqtSignal,
     pyqtSlot,
 )
+from qgis.core import QgsRasterLayer, QgsVectorLayer
 
 if TYPE_CHECKING:
-    from qgis.core import QgsFeature, QgsGeometry, QgsProject, QgsVectorLayer
+    from qgis.core import QgsFeature, QgsGeometry, QgsMapLayer, QgsProject
 
 
-class QgsVectorLayerStub(QObject):
+class QgsMapLayerStub(QObject):
     """
-    Stub implementation of QgsVectorLayer.
+    Stub implementation of QgsMapLayer.
     """
 
-    featureAdded = pyqtSignal(int)
-
-    def __init__(self, qgis_layer: "QgsVectorLayer") -> None:
+    def __init__(self, qgis_layer: "QgsMapLayer") -> None:
         super().__init__(parent=qgis_layer)
         self.qgis_layer = qgis_layer
-        self.qgis_layer.featureAdded.connect(self.featureAdded.emit)
 
     @pyqtProperty(str)
     def name(self) -> str:
@@ -53,6 +51,27 @@ class QgsVectorLayerStub(QObject):
         # but an attribute (or a property in python)
         return self.qgis_layer.isValid()
 
+    @staticmethod
+    def create_from_qgs_map_layer(map_layer: "QgsMapLayer") -> "QgsMapLayerStub":
+        if isinstance(map_layer, QgsVectorLayer):
+            return QgsVectorLayerStub(map_layer)
+        if isinstance(map_layer, QgsRasterLayer):
+            return QgsRasterLayerStub(map_layer)
+        raise NotImplementedError
+
+
+class QgsVectorLayerStub(QgsMapLayerStub):
+    """
+    Stub implementation of QgsVectorLayer.
+    """
+
+    featureAdded = pyqtSignal(int)
+
+    def __init__(self, qgis_layer: "QgsVectorLayer") -> None:
+        super().__init__(qgis_layer)
+        self.qgis_layer: QgsVectorLayer = cast("QgsVectorLayer", self.qgis_layer)
+        self.qgis_layer.featureAdded.connect(self.featureAdded.emit)
+
     @pyqtSlot(result=bool)
     def startEditing(self) -> bool:
         return self.qgis_layer.startEditing()
@@ -61,6 +80,18 @@ class QgsVectorLayerStub(QObject):
     def commitChanges(self) -> bool:
         # TODO: stop editing or not?
         return self.qgis_layer.commitChanges(stopEditing=False)
+
+
+class QgsRasterLayerStub(QgsMapLayerStub):
+    """
+    Stub implementation of QgsRasterLayer.
+    """
+
+    featureAdded = pyqtSignal(int)
+
+    def __init__(self, qgis_layer: "QgsRasterLayer") -> None:
+        super().__init__(qgis_layer)
+        self.qgis_layer: QgsRasterLayer = cast("QgsRasterLayer", self.qgis_layer)
 
 
 class QgsProjectStub(QObject):
@@ -74,7 +105,12 @@ class QgsProjectStub(QObject):
 
     @pyqtSlot(str, result=list)
     def mapLayersByName(self, name: str) -> list[QgsVectorLayerStub]:
-        return list(map(QgsVectorLayerStub, self.qgis_project.mapLayersByName(name)))
+        return list(
+            map(
+                QgsMapLayerStub.create_from_qgs_map_layer,
+                self.qgis_project.mapLayersByName(name),
+            )
+        )
 
 
 class QSettingsStub(QSettings):

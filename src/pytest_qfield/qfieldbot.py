@@ -23,6 +23,7 @@ import pytest_qgis.utils
 from PyQt6.QtCore import QObject, QPointF, Qt, QtMsgType, QUrl
 from PyQt6.QtQml import QQmlComponent
 from PyQt6.QtQuick import QQuickItem
+from qgis.core import QgsProject
 
 if TYPE_CHECKING:
     from PyQt6.QtQml import QQmlApplicationEngine
@@ -30,7 +31,6 @@ if TYPE_CHECKING:
     from pytestqt.qtbot import QtBot
 
     from pytest_qfield.stub_interface.qfield_stubs import QFieldAppInterfaceStub
-
 
 QML_JS_QOBJECT_TEMPLATE = """
 import QtQml
@@ -86,6 +86,20 @@ class QFieldBot:
         Show the QField application window.
         """
         self.iface.show()
+
+    def open_project(self, project_file: Path) -> None:
+        """
+        Open a QField project file.
+
+        If you load the plugin before opening the project, remember to load it with
+        emit_load_project_ended=False.
+
+        :param project_file: Path to the QGIS project file to open.
+        """
+        QgsProject.instance().clear()
+        with self.qtbot.waitSignal(QgsProject.instance().readProject):
+            assert QgsProject.instance().read(str(project_file))
+        self.emit_load_project_ended()
 
     def load_plugin(
         self,

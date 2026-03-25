@@ -45,7 +45,7 @@ def test_vector_layer_should_be_visible_in_app(
     layer_points: "QgsVectorLayer",
     qgs_project_stub: "QgsProjectStub",
 ):
-    qgs_project_stub.qgis_project.addMapLayer(layer_points)
+    assert qgs_project_stub.qgis_project.addMapLayer(layer_points)
     qfield_bot.iface.qgis_map_canvas.setExtent(layer_points.extent())
 
 
@@ -56,6 +56,16 @@ def test_vector_layer_with_non_default_crs_should_be_visible_in_app(
     layer_polygon_3067: "QgsVectorLayer",
     qgs_project_stub: "QgsProjectStub",
 ):
-    qgs_project_stub.qgis_project.addMapLayer(layer_polygon_3067)
+    assert qgs_project_stub.qgis_project.addMapLayer(layer_polygon_3067)
     qfield_bot.set_map_crs_based_on_layers()
     qfield_bot.iface.qgis_map_canvas.setExtent(layer_polygon_3067.extent())
+
+
+@pytest.mark.usefixtures(
+    "load_simple_plugin_without_project_loaded_signal", "project_loaded"
+)
+def test_qfield_bot_should_open_project_file_and_layers_should_be_visible(
+    qfield_bot: "QFieldBot",
+):
+    # TODO: cannot use qgis_show_map since it tries to reproject the web map
+    qfield_bot.qtbot.wait(DEFAULT_TIMEOUT * 1000)

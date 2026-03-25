@@ -28,7 +28,8 @@ from PyQt6.QtQml import (
 )
 from PyQt6.QtQuickWidgets import QQuickWidget
 from PyQt6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget
-from qgis._core import QgsProject
+from qgis.core import QgsProject
+from qgis.gui import QgsLayerTreeMapCanvasBridge
 
 from pytest_qfield.qfieldbot import QFieldBot
 from pytest_qfield.stub_interface.qfield_stubs import (
@@ -90,6 +91,11 @@ def qfield_bot(  # noqa: PLR0913
     qfield_import_path = _get_qfied_import_path(request)
 
     engine = QQmlApplicationEngine()
+
+    # Ensures the layer order stays the same
+    _bridge = QgsLayerTreeMapCanvasBridge(
+        QgsProject.instance().layerTreeRoot(), qgis_canvas
+    )
 
     # Load QField imports
     engine.addImportPath(str(qfield_import_path))

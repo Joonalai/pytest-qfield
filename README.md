@@ -74,6 +74,7 @@ Other overridable fixtures include:
 The `qfield_bot` fixture provides several methods to help testing:
 
 - `load_plugin(qml_file)`: Loads a QField plugin QML file.
+- `open_project(qfield_project_file)`: Opens a QField project file.
 - `show_window()`: Shows the QField main window.
 - `get_item(object_name)`: Finds a QML item by its `objectName`.
 - `click_item(item)`: Simulates a mouse click on a QML item.

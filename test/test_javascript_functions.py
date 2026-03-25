@@ -85,7 +85,7 @@ def test_qgis_project_map_layers_by_name(
 
     with subtests.test("QObject layer can be used"):
         layer = QgsVectorLayer("Point", "foo", "memory")
-        qgs_project_stub.qgis_project.addMapLayer(layer)
+        assert qgs_project_stub.qgis_project.addMapLayer(layer)
         returned_layer = js_object.call("foo")
         assert isinstance(returned_layer, QgsVectorLayerStub)
         assert returned_layer.name == "foo"
