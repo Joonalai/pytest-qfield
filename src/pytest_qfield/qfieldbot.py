@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
 import shutil
+from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
@@ -86,6 +87,9 @@ class QFieldBot:
         Show the QField application window.
         """
         self.iface.show()
+        QgsProject.instance().layersAdded.connect(
+            self.sync_canvas_layers_to_project_layer_tree
+        )
 
     def open_project(self, project_file: Path) -> None:
         """
@@ -97,9 +101,19 @@ class QFieldBot:
         :param project_file: Path to the QGIS project file to open.
         """
         QgsProject.instance().clear()
-        with self.qtbot.waitSignal(QgsProject.instance().readProject):
-            assert QgsProject.instance().read(str(project_file))
-        self.emit_load_project_ended()
+        with suppress(TypeError):
+            QgsProject.instance().layersAdded.disconnect(
+                self.sync_canvas_layers_to_project_layer_tree
+            )
+        try:
+            with self.qtbot.waitSignal(QgsProject.instance().readProject):
+                assert QgsProject.instance().read(str(project_file))
+            self.sync_canvas_layers_to_project_layer_tree()
+            self.emit_load_project_ended()
+        finally:
+            QgsProject.instance().layersAdded.connect(
+                self.sync_canvas_layers_to_project_layer_tree
+            )
 
     def load_plugin(
         self,
@@ -226,3 +240,26 @@ class QFieldBot:
         if self._plugin_root_object is None:
             raise ValueError("Plugin not loaded yet!")
         return self._plugin_root_object
+
+    def sync_canvas_layers_to_project_layer_tree(self, *_: Any) -> None:  # noqa: ANN401
+        """
+        Set map canvas layers in project layer tree order.
+
+        This is alternative way compared to settings up the QgsLayerTreeMapCanvasBridge,
+        which does not seem to cope well with web map services.
+        """
+        root = QgsProject.instance().layerTreeRoot()
+        ordered_layers = []
+        for layer in root.layerOrder():
+            layer_node = root.findLayer(layer.id())
+            if layer_node is None:
+                continue
+            is_visible = (
+                layer_node.itemVisibilityChecked()
+                if hasattr(layer_node, "itemVisibilityChecked")
+                else layer_node.isVisible()
+            )
+            if is_visible:
+                ordered_layers.append(layer)
+        self.iface.qgis_map_canvas.setLayers(ordered_layers)
+        self.iface.qgis_map_canvas.refreshAllLayers()
