@@ -47,6 +47,11 @@ repos:
     rev: v0.12.0
     hooks:
       - id: normalize-xml
+        files: \.(xml|qml|ui|qgs)$
+        args: [
+          "--remove-tag", "ProjectGpsSettings",
+          "--remove-tag", "properties"
+        ]
 
   - repo: https://github.com/jorisroovers/gitlint
     rev: v0.19.1

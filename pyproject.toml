@@ -121,3 +121,4 @@ lint.external = ["QGS"]
 select = [
   "QGS",
 ]
+ignore = ["QGS103"]

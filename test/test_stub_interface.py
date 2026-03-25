@@ -42,7 +42,7 @@ def load_stub_plugin(
         raise_if_warnings=True,
         emit_load_project_ended=False,
     )
-    qgs_project_stub.qgis_project.addMapLayer(layer_points)
+    assert qgs_project_stub.qgis_project.addMapLayer(layer_points)
     qfield_bot.iface.qgis_map_canvas.setExtent(layer_points.extent())
     qfield_bot.emit_load_project_ended()
     assert qfield_bot.iface.logged_messages == ["Setup complete"]
