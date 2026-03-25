@@ -105,6 +105,8 @@ lint.unfixable = [
     "F841", # Unused variables
 ]
 
+lint.external = ["QGS"]
+
 [tool.ruff.lint.per-file-ignores]
 "src/pytest_qfield/stub_interface/*" = ["N802", "N815"]
 "src/pytest_qfield/qfield_resources.py" = ["N802", "ANN201", "INP"]
@@ -113,4 +115,9 @@ lint.unfixable = [
     "ANN201", # missing-return-type-undocumented-public-function
     "PLR2004", # magic-value-comparison
     "N802", # Function name should be lowercase
+]
+
+[tool.flake8]
+select = [
+  "QGS",
 ]
