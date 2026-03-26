@@ -89,7 +89,10 @@ The `qfield_bot` fixture provides several methods to help testing:
 
 ## Installation
 
-Install with `pip` or `uv`:
+You must have QGIS >= 4.0 installed to use this plugin.
+
+Install with `pip` or `uv` to a python environment that is aware of system QGIS libraries.
+You can create one with [qgis-venv-creator](https://github.com/GispoCoding/qgis-venv-creator).
 
 ```bash
 pip install pytest-qfield
