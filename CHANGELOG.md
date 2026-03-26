@@ -1,8 +1,5 @@
-## Unreleased
+# Changelog
 
-- feat: Functionality to open projects
-- feat: Stub class for QgsRasterLayer
-
-## 0.1.0 - 2026-03-24
+## v0.1.0 - (2026-03-24)
 
 - Initial release
