@@ -81,6 +81,12 @@ class QgsVectorLayerStub(QgsMapLayerStub):
         # TODO: stop editing or not?
         return self.qgis_layer.commitChanges(stopEditing=False)
 
+    @pyqtSlot(int, result=QObject)
+    def getFeature(self, feature_id: int) -> "QgsFeatureStub":
+        stub = QgsFeatureStub(self.qgis_layer.getFeature(feature_id))
+        stub.setParent(self)
+        return stub
+
 
 class QgsRasterLayerStub(QgsMapLayerStub):
     """
