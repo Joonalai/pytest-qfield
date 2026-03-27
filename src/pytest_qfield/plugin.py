@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
 import os
-from collections.abc import Callable, Iterator
+from collections.abc import Iterator
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -77,8 +77,8 @@ def qfield_bot(  # noqa: PLR0913
     qfield_feature_utils_stub: QFieldFeatureUtilsStub,
     qfield_geometry_utils_stub: QFieldGeometryUtilsStub,
     register_qfield_resources: None,  # noqa: ARG001
-    register_qfield_types: Callable,
-    register_qgis_types: Callable,
+    register_qfield_types: None,  # noqa: ARG001
+    register_qgis_types: None,  # noqa: ARG001
     main_window_qml_path: Path,
     qtbot: "QtBot",
     qtlog: "_QtMessageCapture",
@@ -116,9 +116,6 @@ def qfield_bot(  # noqa: PLR0913
 
     for property_name, property_value in context_properties.items():
         engine.rootContext().setContextProperty(property_name, property_value)
-
-    register_qfield_types()
-    register_qgis_types()
 
     qfield_bot = QFieldBot(
         qml_engine=engine,
@@ -261,8 +258,8 @@ def register_qfield_resources() -> None:
     import pytest_qfield.qfield_resources  # noqa: F401, PLC0415
 
 
-@pytest.fixture
-def register_qfield_types() -> Callable:
+@pytest.fixture(scope="session")
+def register_qfield_types() -> None:
     """
     Registers qfield types used in QField plugin.
     Override this fixture to provide more types needed.
@@ -271,18 +268,14 @@ def register_qfield_types() -> Callable:
     (lines that register something to "org.qfield")
     https://github.com/opengisch/QField/blob/master/src/core/qgismobileapp.cpp
     """
-
-    def register_qfield_types() -> None:
-        # Something provided here just to get rid of warnings
-        qmlRegisterType(QgsProjectStub, "org.qfield", 1, 0, "Foo")
-        # qmlRegisterUncreatableType
-        # qmlRegisterSingletonType
-
-    return register_qfield_types
+    # Something provided here just to get rid of warnings
+    qmlRegisterType(QgsProjectStub, "org.qfield", 1, 0, "Foo")
+    # qmlRegisterUncreatableType
+    # qmlRegisterSingletonType
 
 
-@pytest.fixture
-def register_qgis_types() -> Callable:
+@pytest.fixture(scope="session")
+def register_qgis_types() -> None:
     """
     Registers qgus types used in QField plugin.
     Override this fixture to provide more types needed.
@@ -291,14 +284,10 @@ def register_qgis_types() -> Callable:
     (lines that register something to "org.qgis")
     https://github.com/opengisch/QField/blob/master/src/core/qgismobileapp.cpp
     """
-
-    def register_qgis_types() -> None:
-        # Something provided here just to get rid of warnings
-        qmlRegisterType(QgsProjectStub, "org.qgis", 1, 0, "Foo")
-        # qmlRegisterUncreatableType
-        # qmlRegisterSingletonType
-
-    return register_qgis_types
+    # Something provided here just to get rid of warnings
+    qmlRegisterType(QgsProjectStub, "org.qgis", 1, 0, "Foo")
+    # qmlRegisterUncreatableType
+    # qmlRegisterSingletonType
 
 
 def pytest_addoption(parser: "Parser") -> None:
