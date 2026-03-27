@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.2.3 (2026-03-27)
+
+### Bug Fixes
+
+- Pass correct default value to QgsVectorLayerUtils.createFeature
+  ([`d8a4568`](https://github.com/Joonalai/pytest-qfield/commit/d8a456807ba336c301fb62bd6cc22914a549d188))
+
+
 ## v0.2.2 (2026-03-26)
 
 ### Bug Fixes
