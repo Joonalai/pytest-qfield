@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.2.4 (2026-03-27)
+
+### Bug Fixes
+
+- Use session fixture to register qml types to avoid Qt limit of 60 registered types
+  ([`da17f22`](https://github.com/Joonalai/pytest-qfield/commit/da17f226e4e2c1318bf4be39bd6d3db48decaa31))
+
+
 ## v0.2.3 (2026-03-27)
 
 ### Bug Fixes

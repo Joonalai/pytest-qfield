@@ -2,7 +2,7 @@
 name = "pytest-qfield"
 description = "A pytest plugin for testing QField qml plugins"
 readme = "README.md"
-version = "0.2.3"
+version = "0.2.4"
 keywords = ["pytest", "QField", "GIS"]
 license = "GPL-2.0-only"
 license-files = ["LICENSE"]
