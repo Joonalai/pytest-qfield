@@ -197,13 +197,13 @@ class FeatureIteratorStub(QObject):
 
     @pyqtSlot(result=bool)
     def hasNext(self) -> bool:
-        return len(self._features) > 0 and self.iterated_count < len(self._features) + 1
+        return len(self._features) > 0 and self.iterated_count < len(self._features)
 
     @pyqtSlot(result=QObject)
     def next(self) -> QgsFeatureStub:
-        self.iterated_count += 1
-        feature_stub = QgsFeatureStub(self._features[self.iterated_count - 1])
+        feature_stub = QgsFeatureStub(self._features[self.iterated_count])
         feature_stub.setParent(self)
+        self.iterated_count += 1
         return feature_stub
 
     @pyqtSlot()
