@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.3.0 (2026-03-27)
+
+### Bug Fixes
+
+- Fix feature iterator logic
+  ([`7864486`](https://github.com/Joonalai/pytest-qfield/commit/7864486efea10ab49ec9611624ab75b910d1162d))
+
+### Features
+
+- Add stub for QgsVectorLayer.getFeature
+  ([`0a6d0d2`](https://github.com/Joonalai/pytest-qfield/commit/0a6d0d2f696c8f48445ba61e9f958356eaedf8a9))
+
+
 ## v0.2.4 (2026-03-27)
 
 ### Bug Fixes
