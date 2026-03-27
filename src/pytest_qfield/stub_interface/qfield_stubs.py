@@ -223,7 +223,8 @@ class QFieldFeatureUtilsStub(QObject):
         self, layer: QgsVectorLayerStub, geometry: QgsGeometryStub | None = None
     ) -> QgsFeatureStub:
         feature = QgsVectorLayerUtils.createFeature(
-            layer.qgis_layer, geometry=geometry.qgis_geometry if geometry else None
+            layer.qgis_layer,
+            geometry=geometry.qgis_geometry if geometry else QgsGeometry(),
         )
         stub = QgsFeatureStub(feature)
         stub.setParent(self)
