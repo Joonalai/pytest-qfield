@@ -103,7 +103,7 @@ pip install pytest-qfield
 
 The plugin needs access to QField source code for its QML imports (typically `QField/src/qml/imports`).
 
-First clone [QField](https://github.com/opengisch/QField) source code somewhere and checkout the `v4.0.6` tag and then
+First clone [QField](https://github.com/opengisch/QField) source code somewhere and checkout the target QField tag and then
 set it either with an environment variable or a `pytest.ini` value.
 
 ```bash
@@ -121,7 +121,7 @@ qfield_imports_dir = /absolute/path/to/QField/src/qml/imports
 This project uses [uv](https://docs.astral.sh/uv/getting-started/installation/)
 to manage python packages. Make sure to have it installed first.
 
-- Clone [QField](https://github.com/opengisch/QField) source code somewhere and checkout the `v4.0.6` tag
+- Clone [QField](https://github.com/opengisch/QField) source code somewhere and checkout the tag for requested QField version.
 - Copy .env.example to .env and fill the missing values
 - Create a venv that is aware of system QGIS libraries: `uv venv --system-site-packages`. Make sure to use same Python
   executable as QGIS.
