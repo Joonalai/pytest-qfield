@@ -28,6 +28,7 @@ The following stub fixtures correspond to objects available in the QField QML co
 | `qfield_iface` | `iface` | QField application interface. |
 | `qgs_project_stub` | `qgisProject` | QgsProject instance. |
 | `qfield_platform_utilities_stub` | `platformUtilities` | Platform-specific utilities. |
+| `qfield_theme_stub` | `Theme` | Theme colors, fonts, and layout constants. Required for QField versions >v4.0.6 where Theme is a C++ singleton. |
 | `qfield_string_utils_stub` | `StringUtils` | String utility functions. |
 | `qfield_layer_utils_stub` | `LayerUtils` | Layer utility functions. |
 | `qfield_feature_utils_stub` | `FeatureUtils` | Feature utility functions. |
@@ -36,21 +37,27 @@ The following stub fixtures correspond to objects available in the QField QML co
 
 #### How to Override
 
-To override a stub or another fixture, define it in your project's `conftest.py`:
+To override a stub, subclass it and redefine the fixture in your `conftest.py` or test module.
+For example, to make `StringUtils.createUuid()` return a deterministic value:
 
 ```python
 # conftest.py
 import pytest
-from pytest_qfield.stub_interface.qfield_stubs import QFieldAppInterfaceStub
+from PyQt6.QtCore import pyqtSlot
+from pytest_qfield.stub_interface.qfield_stubs import QFieldStringUtilsStub
 
-class CustomIface(QFieldAppInterfaceStub):
-    def some_custom_method(self):
-        return "custom value"
+class DeterministicStringUtils(QFieldStringUtilsStub):
+    @pyqtSlot(result=str)
+    def createUuid(self) -> str:
+        return "{00000000-0000-0000-0000-000000000000}"
 
 @pytest.fixture
-def qfield_iface(qgis_iface):
-    return CustomIface(qgis_iface)
+def qfield_string_utils_stub() -> QFieldStringUtilsStub:
+    return DeterministicStringUtils()
 ```
+
+Any QML code calling `StringUtils.createUuid()` will now receive the fixed value.
+See [`test/test_fixture_override.py`](test/test_fixture_override.py) for a complete working example.
 
 You can also use `qfield_qml_extra_context_properties` to inject additional objects into the QML context:
 
@@ -83,7 +90,8 @@ The `qfield_bot` fixture provides several methods to help testing:
 ## Examples
 
 - Basic plugin loading/clicking tests: [`test/test_plugin.py`](test/test_plugin.py)
-- Javascript function tests: [`test_javascript_functions.py`](test/test_javascript_functions.py)
+- Overriding stub fixtures: [`test/test_fixture_override.py`](test/test_fixture_override.py)
+- Javascript function tests: [`test/test_javascript_functions.py`](test/test_javascript_functions.py)
 - Stub interface integration: [`test/test_stub_interface.py`](test/test_stub_interface.py)
 - Visual/manual checks: [`test/visual/test_plugin_visually.py`](test/visual/test_plugin_visually.py)
 
