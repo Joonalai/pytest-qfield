@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.4.0 (2026-04-06)
+
+### Features
+
+- Add stub for QFieldThemeStub enabling newer QField versions
+  ([`81b6973`](https://github.com/Joonalai/pytest-qfield/commit/81b69738adb4d8afb9a8b1fa7f572cb1016dec64))
+
+
 ## v0.3.0 (2026-03-27)
 
 ### Bug Fixes
