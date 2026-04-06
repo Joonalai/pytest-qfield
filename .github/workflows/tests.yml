@@ -31,7 +31,7 @@ jobs:
         with:
           repository: opengisch/QField
           path: QField
-          ref: v4.0.6
+          ref: v4.1.4
 
       - name: Install venv
         run: |

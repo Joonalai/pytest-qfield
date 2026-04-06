@@ -18,7 +18,8 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from PyQt6.QtCore import QObject, QSizeF, pyqtSignal, pyqtSlot
+from PyQt6.QtCore import QObject, QSizeF, pyqtProperty, pyqtSignal, pyqtSlot
+from PyQt6.QtGui import QColor, QFont
 from PyQt6.QtQuick import QQuickItem
 from qgis.core import QgsFeatureRequest, QgsGeometry, QgsVectorLayerUtils
 
@@ -229,3 +230,424 @@ class QFieldFeatureUtilsStub(QObject):
         stub = QgsFeatureStub(feature)
         stub.setParent(self)
         return stub
+
+
+class QFieldThemeStub(QObject):
+    """
+    Stub implementation of Theme.
+
+    Provides color, font, and layout properties used throughout
+    QField's QML components. In newer QField versions (>v4.0.6),
+    Theme is a C++ singleton rather than a QML-only module.
+
+    https://github.com/opengisch/QField/blob/master/src/core/theme.h
+    """
+
+    themeDataLoaded = pyqtSignal()
+    darkThemeChanged = pyqtSignal()
+    fontScaleChanged = pyqtSignal()
+
+    _PPI_XXXHDPI = 360
+    _PPI_XXHDPI = 270
+    _PPI_XHDPI = 180
+    _PPI_HDPI = 135
+
+    def __init__(
+        self,
+        system_font_point_size: float = 14.0,
+        parent: QObject | None = None,
+    ) -> None:
+        super().__init__(parent=parent)
+        self._systemFontPointSize = system_font_point_size
+        self._fontScale = 1.0
+        self._darkTheme = False
+        self._screenPpi = 160.0
+        self._init_theme_colors()
+        self._init_fixed_colors()
+
+    def _init_theme_colors(self) -> None:
+        self._mainColor = QColor("#80cc28")
+        self._mainOverlayColor = QColor("#ffffff")
+        self._mainBackgroundColor = QColor("#ffffff")
+        self._mainBackgroundColorSemiOpaque = QColor(255, 255, 255, 187)
+        self._mainTextColor = QColor("#000000")
+        self._mainTextDisabledColor = QColor("#888888")
+        self._secondaryTextColor = QColor("#555555")
+        self._controlBackgroundColor = QColor("#f0f0f0")
+        self._controlBackgroundAlternateColor = QColor("#e8e8e8")
+        self._controlBackgroundDisabledColor = QColor("#d0d0d0")
+        self._controlBorderColor = QColor("#cccccc")
+        self._buttonColor = QColor("#ffffff")
+        self._buttonBackgroundColor = QColor("#80cc28")
+        self._toolButtonColor = QColor("#000000")
+        self._toolButtonBackgroundColor = QColor("#ffffff")
+        self._toolButtonBackgroundSemiOpaqueColor = QColor(255, 255, 255, 187)
+        self._scrollBarBackgroundColor = QColor("#cccccc")
+        self._groupBoxBackgroundColor = QColor("#ffffff")
+        self._groupBoxSurfaceColor = QColor("#f5f5f5")
+        self._goodColor = QColor("#80cc28")
+        self._warningColor = QColor("#fd9626")
+        self._errorColor = QColor("#c0392b")
+
+    def _init_fixed_colors(self) -> None:
+        self._mainColorSemiOpaque = QColor(128, 204, 40, 187)
+        self._darkRed = QColor("#c0392b")
+        self._darkGray = QColor("#555555")
+        self._darkGraySemiOpaque = QColor(85, 85, 85, 187)
+        self._gray = QColor("#888888")
+        self._lightGray = QColor("#cccccc")
+        self._lightestGray = QColor("#e8e8e8")
+        self._lightestGraySemiOpaque = QColor(232, 232, 232, 187)
+        self._light = QColor("#f0f0f0")
+        self._cloudColor = QColor("#4c6daa")
+        self._positionColor = QColor("#64b5f6")
+        self._positionColorSemiOpaque = QColor(100, 181, 246, 187)
+        self._positionBackgroundColor = QColor("#3d7bc4")
+        self._darkPositionColor = QColor("#2a5c99")
+        self._darkPositionColorSemiOpaque = QColor(42, 92, 153, 187)
+        self._accuracyBad = QColor("#c0392b")
+        self._accuracyTolerated = QColor("#fd9626")
+        self._accuracyExcellent = QColor("#80cc28")
+        self._navigationColor = QColor("#984ea3")
+        self._navigationColorSemiOpaque = QColor(152, 78, 163, 187)
+        self._navigationBackgroundColor = QColor("#6b3571")
+        self._sensorBackgroundColor = QColor("#e67e22")
+        self._bookmarkDefault = QColor("#80cc28")
+        self._bookmarkOrange = QColor("#fd9626")
+        self._bookmarkRed = QColor("#c0392b")
+        self._bookmarkBlue = QColor("#4c6daa")
+        self._qfieldcloudBlue = QColor("#4c6daa")
+        self._vertexColor = QColor("#e74c3c")
+        self._vertexColorSemiOpaque = QColor(231, 76, 60, 187)
+        self._vertexSelectedColor = QColor("#3498db")
+        self._vertexSelectedColorSemiOpaque = QColor(52, 152, 219, 187)
+        self._vertexNewColor = QColor("#2ecc71")
+        self._vertexNewColorSemiOpaque = QColor(46, 204, 113, 187)
+        self._processingPreview = QColor("#ff00ff")
+
+    # Color properties (all notify via themeDataLoaded for simplicity)
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def mainColor(self) -> QColor:
+        return self._mainColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def mainOverlayColor(self) -> QColor:
+        return self._mainOverlayColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def mainBackgroundColor(self) -> QColor:
+        return self._mainBackgroundColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def mainBackgroundColorSemiOpaque(self) -> QColor:
+        return self._mainBackgroundColorSemiOpaque
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def mainTextColor(self) -> QColor:
+        return self._mainTextColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def mainTextDisabledColor(self) -> QColor:
+        return self._mainTextDisabledColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def secondaryTextColor(self) -> QColor:
+        return self._secondaryTextColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def controlBackgroundColor(self) -> QColor:
+        return self._controlBackgroundColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def controlBackgroundAlternateColor(self) -> QColor:
+        return self._controlBackgroundAlternateColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def controlBackgroundDisabledColor(self) -> QColor:
+        return self._controlBackgroundDisabledColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def controlBorderColor(self) -> QColor:
+        return self._controlBorderColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def buttonColor(self) -> QColor:
+        return self._buttonColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def buttonBackgroundColor(self) -> QColor:
+        return self._buttonBackgroundColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def toolButtonColor(self) -> QColor:
+        return self._toolButtonColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def toolButtonBackgroundColor(self) -> QColor:
+        return self._toolButtonBackgroundColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def toolButtonBackgroundSemiOpaqueColor(self) -> QColor:
+        return self._toolButtonBackgroundSemiOpaqueColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def scrollBarBackgroundColor(self) -> QColor:
+        return self._scrollBarBackgroundColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def groupBoxBackgroundColor(self) -> QColor:
+        return self._groupBoxBackgroundColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def groupBoxSurfaceColor(self) -> QColor:
+        return self._groupBoxSurfaceColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def goodColor(self) -> QColor:
+        return self._goodColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def warningColor(self) -> QColor:
+        return self._warningColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def errorColor(self) -> QColor:
+        return self._errorColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def mainColorSemiOpaque(self) -> QColor:
+        return self._mainColorSemiOpaque
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def darkRed(self) -> QColor:
+        return self._darkRed
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def darkGray(self) -> QColor:
+        return self._darkGray
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def darkGraySemiOpaque(self) -> QColor:
+        return self._darkGraySemiOpaque
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def gray(self) -> QColor:
+        return self._gray
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def lightGray(self) -> QColor:
+        return self._lightGray
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def lightestGray(self) -> QColor:
+        return self._lightestGray
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def lightestGraySemiOpaque(self) -> QColor:
+        return self._lightestGraySemiOpaque
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def light(self) -> QColor:
+        return self._light
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def cloudColor(self) -> QColor:
+        return self._cloudColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def positionColor(self) -> QColor:
+        return self._positionColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def positionColorSemiOpaque(self) -> QColor:
+        return self._positionColorSemiOpaque
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def positionBackgroundColor(self) -> QColor:
+        return self._positionBackgroundColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def darkPositionColor(self) -> QColor:
+        return self._darkPositionColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def darkPositionColorSemiOpaque(self) -> QColor:
+        return self._darkPositionColorSemiOpaque
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def accuracyBad(self) -> QColor:
+        return self._accuracyBad
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def accuracyTolerated(self) -> QColor:
+        return self._accuracyTolerated
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def accuracyExcellent(self) -> QColor:
+        return self._accuracyExcellent
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def navigationColor(self) -> QColor:
+        return self._navigationColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def navigationColorSemiOpaque(self) -> QColor:
+        return self._navigationColorSemiOpaque
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def navigationBackgroundColor(self) -> QColor:
+        return self._navigationBackgroundColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def sensorBackgroundColor(self) -> QColor:
+        return self._sensorBackgroundColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def bookmarkDefault(self) -> QColor:
+        return self._bookmarkDefault
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def bookmarkOrange(self) -> QColor:
+        return self._bookmarkOrange
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def bookmarkRed(self) -> QColor:
+        return self._bookmarkRed
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def bookmarkBlue(self) -> QColor:
+        return self._bookmarkBlue
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def qfieldcloudBlue(self) -> QColor:
+        return self._qfieldcloudBlue
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def vertexColor(self) -> QColor:
+        return self._vertexColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def vertexColorSemiOpaque(self) -> QColor:
+        return self._vertexColorSemiOpaque
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def vertexSelectedColor(self) -> QColor:
+        return self._vertexSelectedColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def vertexSelectedColorSemiOpaque(self) -> QColor:
+        return self._vertexSelectedColorSemiOpaque
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def vertexNewColor(self) -> QColor:
+        return self._vertexNewColor
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def vertexNewColorSemiOpaque(self) -> QColor:
+        return self._vertexNewColorSemiOpaque
+
+    @pyqtProperty(QColor, notify=themeDataLoaded)
+    def processingPreview(self) -> QColor:
+        return self._processingPreview
+
+    def _make_font(self, scale_factor: float, bold: bool) -> QFont:
+        font = QFont()
+        font.setPointSizeF(self._systemFontPointSize * self._fontScale * scale_factor)
+        font.setBold(bold)
+        font.setWeight(QFont.Weight.Bold if bold else QFont.Weight.Normal)
+        return font
+
+    # Bool / scalar properties
+    @pyqtProperty(bool, notify=darkThemeChanged)
+    def darkTheme(self) -> bool:
+        return self._darkTheme
+
+    @pyqtProperty(float, notify=fontScaleChanged)
+    def fontScale(self) -> float:
+        return self._fontScale
+
+    # Font properties
+    @pyqtProperty(QFont, notify=fontScaleChanged)
+    def defaultFont(self) -> QFont:
+        return self._make_font(1.0, bold=False)
+
+    @pyqtProperty(QFont, notify=fontScaleChanged)
+    def tinyFont(self) -> QFont:
+        return self._make_font(0.75, bold=False)
+
+    @pyqtProperty(QFont, notify=fontScaleChanged)
+    def tipFont(self) -> QFont:
+        return self._make_font(0.875, bold=False)
+
+    @pyqtProperty(QFont, notify=fontScaleChanged)
+    def resultFont(self) -> QFont:
+        return self._make_font(0.8125, bold=False)
+
+    @pyqtProperty(QFont, notify=fontScaleChanged)
+    def strongFont(self) -> QFont:
+        return self._make_font(1.0, bold=True)
+
+    @pyqtProperty(QFont, notify=fontScaleChanged)
+    def strongTipFont(self) -> QFont:
+        return self._make_font(0.875, bold=True)
+
+    @pyqtProperty(QFont, notify=fontScaleChanged)
+    def secondaryTitleFont(self) -> QFont:
+        return self._make_font(1.125, bold=False)
+
+    @pyqtProperty(QFont, notify=fontScaleChanged)
+    def titleFont(self) -> QFont:
+        return self._make_font(1.25, bold=False)
+
+    @pyqtProperty(QFont, notify=fontScaleChanged)
+    def strongTitleFont(self) -> QFont:
+        return self._make_font(1.25, bold=True)
+
+    # Layout constants
+    @pyqtProperty(int, constant=True)
+    def popupScreenEdgeVerticalMargin(self) -> int:
+        return 40
+
+    @pyqtProperty(int, constant=True)
+    def popupScreenEdgeHorizontalMargin(self) -> int:
+        return 20
+
+    @pyqtProperty(int, constant=True)
+    def menuItemIconlessLeftPadding(self) -> int:
+        return 52
+
+    @pyqtProperty(int, constant=True)
+    def menuItemLeftPadding(self) -> int:
+        return 12
+
+    @pyqtProperty(int, constant=True)
+    def menuItemCheckLeftPadding(self) -> int:
+        return 16
+
+    # Invokable methods
+    @pyqtSlot(str, result=str)
+    def getThemeIcon(self, name: str) -> str:
+        if self._screenPpi >= self._PPI_XXXHDPI:
+            density = "xxxhdpi"
+        elif self._screenPpi >= self._PPI_XXHDPI:
+            density = "xxhdpi"
+        elif self._screenPpi >= self._PPI_XHDPI:
+            density = "xhdpi"
+        elif self._screenPpi >= self._PPI_HDPI:
+            density = "hdpi"
+        else:
+            density = "mdpi"
+        return f"qrc:/themes/qfield/{density}/{name}.png"
+
+    @pyqtSlot(str, result=str)
+    def getThemeVectorIcon(self, name: str) -> str:
+        return f"qrc:/themes/qfield/nodpi/{name}.svg"
+
+    @pyqtSlot(QColor, result=str)
+    def colorToHtml(self, color: QColor) -> str:
+        return (
+            f"rgba({int(color.redF() * 255)},"
+            f"{int(color.greenF() * 255)},"
+            f"{int(color.blueF() * 255)},"
+            f"{int(color.alphaF() * 255)})"
+        )

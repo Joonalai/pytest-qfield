@@ -38,6 +38,7 @@ from pytest_qfield.stub_interface.qfield_stubs import (
     QFieldLayerUtilsStub,
     QFieldPlatformUtilitiesStub,
     QFieldStringUtilsStub,
+    QFieldThemeStub,
 )
 from pytest_qfield.stub_interface.qgis_stubs import QgsProjectStub, QSettingsStub
 
@@ -76,6 +77,7 @@ def qfield_bot(  # noqa: PLR0913
     qfield_layer_utils_stub: QFieldLayerUtilsStub,
     qfield_feature_utils_stub: QFieldFeatureUtilsStub,
     qfield_geometry_utils_stub: QFieldGeometryUtilsStub,
+    qfield_theme_stub: QFieldThemeStub,
     register_qfield_resources: None,  # noqa: ARG001
     register_qfield_types: None,  # noqa: ARG001
     register_qgis_types: None,  # noqa: ARG001
@@ -101,12 +103,14 @@ def qfield_bot(  # noqa: PLR0913
     system_font_point_size = qgis_app.font().pointSizeF() + 2.0
 
     # Inject context properties
+    qfield_theme_stub.setParent(engine)
     context_properties = {
         "iface": qfield_iface,
         "platformUtilities": qfield_platform_utilities_stub,
         "qgisProject": qgs_project_stub,
         "systemFontPointSize": system_font_point_size,
         "settings": QSettingsStub(),
+        "Theme": qfield_theme_stub,
         "StringUtils": qfield_string_utils_stub,
         "LayerUtils": qfield_layer_utils_stub,
         "FeatureUtils": qfield_feature_utils_stub,
@@ -238,6 +242,16 @@ def qfield_geometry_utils_stub() -> QFieldGeometryUtilsStub:
     Override this fixture to use an extended version of the class if needed.
     """
     return QFieldGeometryUtilsStub()
+
+
+@pytest.fixture
+def qfield_theme_stub() -> QFieldThemeStub:
+    """
+    Stub implementation for Theme.
+
+    Override this fixture to use an extended version of the class if needed.
+    """
+    return QFieldThemeStub()
 
 
 @pytest.fixture
