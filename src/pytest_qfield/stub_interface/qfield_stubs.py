@@ -388,6 +388,102 @@ class QFieldGeometryHighlighterStub(QObject):
         pass
 
 
+class QFieldMultiFeatureListModelStub(QObject):
+    """
+    Stub implementation of the ``model`` exposed by ``FeatureListForm``.
+
+    https://github.com/opengisch/QField/blob/master/src/core/multifeaturelistmodel.h
+
+    Only the ``setFeatures(layer, filter)`` slot is exercised — that's what
+    QField's plugin-facing QML calls to navigate to a feature by attribute
+    filter. Each call is appended to ``set_features_calls`` so tests can
+    assert "was this called once with the right args?".
+    """
+
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent=parent)
+        self.set_features_calls: list[tuple[QObject, str]] = []
+
+    @pyqtSlot(QObject, str)
+    def setFeatures(self, layer: QObject, filter_expression: str) -> None:
+        self.set_features_calls.append((layer, filter_expression))
+
+
+class QFieldFeatureListModelSelectionStub(QObject):
+    """
+    Stub implementation of the ``selection`` exposed by ``FeatureListForm``.
+
+    https://github.com/opengisch/QField/blob/master/src/core/featurelistmodelselection.h
+
+    Exposes ``focusedItem`` as a settable index — plugins set it to ``0``
+    after a single-row ``model.setFeatures`` to focus the matched feature.
+    """
+
+    focusedItemChanged = pyqtSignal()
+
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent=parent)
+        self._focused_item = -1
+
+    @pyqtProperty(int, notify=focusedItemChanged)
+    def focusedItem(self) -> int:
+        return self._focused_item
+
+    @focusedItem.setter  # type: ignore[no-redef]
+    def focusedItem(self, value: int) -> None:
+        if self._focused_item == value:
+            return
+        self._focused_item = int(value)
+        self.focusedItemChanged.emit()
+
+
+class QFieldFeatureListFormStub(QObject):
+    """
+    Stub implementation for ``FeatureListForm`` (objectName ``"featureForm"``).
+
+    https://github.com/opengisch/QField/blob/master/src/qml/FeatureListForm.qml
+
+    The QML id is ``featureListForm`` but the ``objectName`` is ``featureForm``
+    — that's the name plugins pass to ``iface.findItemByObjectName``. Plugins
+    drive an existing-feature attribute form via this surface::
+
+        const form = iface.findItemByObjectName("featureForm");
+        form.model.setFeatures(layer, "id = '" + uuid + "'");
+        form.selection.focusedItem = 0;
+        form.state = "FeatureFormEdit";
+
+    ``overlayFeatureFormDrawer`` is a separate (post-digitize) item — don't
+    confuse the two.
+    """
+
+    stateChanged = pyqtSignal()
+
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent=parent)
+        self._model = QFieldMultiFeatureListModelStub(parent=self)
+        self._selection = QFieldFeatureListModelSelectionStub(parent=self)
+        self._state = ""
+
+    @pyqtProperty(QObject, constant=True)
+    def model(self) -> QFieldMultiFeatureListModelStub:
+        return self._model
+
+    @pyqtProperty(QObject, constant=True)
+    def selection(self) -> QFieldFeatureListModelSelectionStub:
+        return self._selection
+
+    @pyqtProperty(str, notify=stateChanged)
+    def state(self) -> str:
+        return self._state
+
+    @state.setter  # type: ignore[no-redef]
+    def state(self, value: str) -> None:
+        if self._state == value:
+            return
+        self._state = str(value)
+        self.stateChanged.emit()
+
+
 class QFieldMapSettingsStub(QObject):
     """
     Stub implementation for ``MapCanvas.mapSettings`` (a subset of MapSettings).
