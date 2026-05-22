@@ -18,7 +18,7 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from PyQt6.QtCore import QObject, QSizeF, pyqtProperty, pyqtSignal, pyqtSlot
+from PyQt6.QtCore import QObject, QPointF, QSizeF, pyqtProperty, pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QColor, QFont
 from PyQt6.QtQuick import QQuickItem
 from qgis.core import QgsFeatureRequest, QgsGeometry, QgsVectorLayerUtils
@@ -30,7 +30,7 @@ from pytest_qfield.stub_interface.qgis_stubs import (
 )
 
 if TYPE_CHECKING:
-    from qgis.gui import QgisInterface
+    from qgis.gui import QgisInterface, QgsMapCanvas
 
 
 class QFieldAppInterfaceStub(QObject):
@@ -51,6 +51,9 @@ class QFieldAppInterfaceStub(QObject):
         self._qgis_main_window: QObject | None = None
         self._qml_main_window: QObject | None = None
         self.qgis_map_canvas = qgis_iface.mapCanvas()
+        self.qml_map_canvas: QFieldMapCanvasStub = QFieldMapCanvasStub(
+            qgis_map_canvas=self.qgis_map_canvas
+        )
         self._named_items: dict[str, QObject] = {}
 
     @property
@@ -96,7 +99,7 @@ class QFieldAppInterfaceStub(QObject):
 
     @pyqtSlot(result=QObject)
     def mapCanvas(self) -> QObject:
-        return self.qml_main_window
+        return self.qml_map_canvas
 
     @pyqtSlot(QObject)
     def addItemToPluginsToolbar(self, _item: "QQuickItem") -> None:
@@ -376,6 +379,56 @@ class QFieldGeometryHighlighterStub(QObject):
     @pyqtSlot()
     def update(self) -> None:
         pass
+
+
+class QFieldMapSettingsStub(QObject):
+    """
+    Stub implementation for ``MapCanvas.mapSettings`` (a subset of MapSettings).
+
+    https://github.com/opengisch/QField/blob/master/src/core/mapsettings.h
+    """
+
+    def __init__(
+        self,
+        qgis_map_canvas: "QgsMapCanvas | None" = None,
+        parent: QObject | None = None,
+    ) -> None:
+        super().__init__(parent=parent)
+        self._qgis_map_canvas = qgis_map_canvas
+
+    @pyqtSlot(QPointF, result=QPointF)
+    def screenToCoordinate(self, point: QPointF) -> QPointF:
+        if self._qgis_map_canvas is None:
+            return point
+        map_to_pixel = self._qgis_map_canvas.mapSettings().mapToPixel()
+        coord = map_to_pixel.toMapCoordinatesF(point.x(), point.y())
+        return QPointF(coord.x(), coord.y())
+
+
+class QFieldMapCanvasStub(QObject):
+    """
+    Stub implementation for the QML ``MapCanvas`` item returned by
+    ``iface.mapCanvas()``.
+
+    https://github.com/opengisch/QField/blob/master/src/qml/MapCanvas.qml
+    """
+
+    clicked = pyqtSignal(QPointF, int)
+    confirmedClicked = pyqtSignal(QPointF, int)
+
+    def __init__(
+        self,
+        qgis_map_canvas: "QgsMapCanvas | None" = None,
+        parent: QObject | None = None,
+    ) -> None:
+        super().__init__(parent=parent)
+        self._map_settings = QFieldMapSettingsStub(
+            qgis_map_canvas=qgis_map_canvas, parent=self
+        )
+
+    @pyqtProperty(QObject, constant=True)
+    def mapSettings(self) -> QFieldMapSettingsStub:
+        return self._map_settings
 
 
 class QFieldFeatureUtilsStub(QObject):

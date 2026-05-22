@@ -58,6 +58,43 @@ def qfield_positioning_stub() -> QFieldPositioningStub:
 
 See [`test/test_named_item_overrides.py`](test/test_named_item_overrides.py) for a complete working example. To assert behaviour when a named item is *missing*, clear the registration on the iface stub or override the fixture to return a sentinel.
 
+#### Map Canvas Stub
+
+`iface.mapCanvas()` returns a `QFieldMapCanvasStub` exposing the QField `MapCanvas` signals plugins listen to:
+
+| Member | Description |
+| --- | --- |
+| `clicked(QPointF, int)` signal | Emitted by QField when the user taps the map. |
+| `confirmedClicked(QPointF, int)` signal | Emitted on a long-press / confirmed tap. |
+| `mapSettings.screenToCoordinate(QPointF) -> QPointF` | Delegates to the wired `QgsMapCanvas.mapSettings().mapToPixel()` for real screen→CRS projection (identity fallback when no canvas is wired). |
+
+The stub is auto-attached to the iface as `qml_map_canvas` and is also exposed via the `qfield_map_canvas_stub` fixture for overrides. By default the fixture wires `pytest-qgis`'s `qgis_canvas` so projection works for real — set an extent and size on `qgis_canvas` before emitting clicks:
+
+```python
+from PyQt6.QtCore import QPointF
+from qgis.core import QgsRectangle
+
+def test_pick_end_point(qfield_bot, qgis_canvas):
+    qgis_canvas.show()
+    qgis_canvas.resize(200, 200)
+    qgis_canvas.setExtent(QgsRectangle(0, 0, 1000, 1000))
+    qgis_canvas.refresh()
+
+    # Pixel (0, 0) is the top-left of the canvas → CRS (0, 1000).
+    qfield_bot.iface.qml_map_canvas.clicked.emit(QPointF(0.0, 0.0), 0)
+    # ...assert your plugin reacted to the picked coordinate
+```
+
+If you'd rather skip the canvas setup and pass project-CRS coordinates directly, override the fixture to drop canvas wiring:
+
+```python
+@pytest.fixture
+def qfield_map_canvas_stub() -> QFieldMapCanvasStub:
+    return QFieldMapCanvasStub()  # no canvas → identity screenToCoordinate
+```
+
+For richer modelling (custom signals, an `extent` property, etc.), subclass `QFieldMapCanvasStub` / `QFieldMapSettingsStub` and return your subclass from the fixture.
+
 #### How to Override
 
 To override a stub, subclass it and redefine the fixture in your `conftest.py` or test module.

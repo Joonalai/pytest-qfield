@@ -7,8 +7,25 @@ import "qrc:/qml" as QFieldItems
 
 Item {
     property var mainWindow: iface.mainWindow()
+    property var mapCanvas: iface.mapCanvas()
     property string layerName: "points"
     property var pointLayer: null
+
+    Connections {
+        target: mapCanvas
+        ignoreUnknownSignals: true
+        function onClicked(point, type) {
+            const coord = mapCanvas.mapSettings.screenToCoordinate(point);
+            iface.logMessage(`clicked x: ${coord.x}`);
+            iface.logMessage(`clicked y: ${coord.y}`);
+            iface.logMessage(`clicked type: ${type}`);
+        }
+        function onConfirmedClicked(point, type) {
+            const coord = mapCanvas.mapSettings.screenToCoordinate(point);
+            iface.logMessage(`confirmed x: ${coord.x}`);
+            iface.logMessage(`confirmed y: ${coord.y}`);
+        }
+    }
 
     Component.onCompleted: {
         iface.addItemToPluginsToolbar(button1);
