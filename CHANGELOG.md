@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.5.0 (2026-05-22)
+
+### Features
+
+- Add findItemByObjectName with auto-registered Positioning and GeometryHighlighter stubs
+  ([`11e33fe`](https://github.com/Joonalai/pytest-qfield/commit/11e33fef3da0442adb3a28af543177ff7fc5e05d))
+
+- Add QFieldMapCanvasStub with clicked signals and QGIS-backed screenToCoordinate
+  ([`1e3ddd1`](https://github.com/Joonalai/pytest-qfield/commit/1e3ddd12f590523f5792cf38af1828d19c794087))
+
+
 ## v0.4.0 (2026-04-06)
 
 ### Features
