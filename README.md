@@ -89,11 +89,10 @@ See [`test/test_named_item_overrides.py`](test/test_named_item_overrides.py) for
 | `confirmedClicked(QPointF, int)` signal | Emitted on a long-press / confirmed tap. |
 | `mapSettings.screenToCoordinate(QPointF) -> QPointF` | Delegates to the wired `QgsMapCanvas.mapSettings().mapToPixel()` for real screen→CRS projection (identity fallback when no canvas is wired). |
 
-The stub is auto-attached to the iface as `qml_map_canvas` and is also exposed via the `qfield_map_canvas_stub` fixture for overrides. By default the fixture wires `pytest-qgis`'s `qgis_canvas` so projection works for real — set an extent and size on `qgis_canvas` before emitting clicks:
+The stub is auto-attached to the iface as `qml_map_canvas` and is also exposed via the `qfield_map_canvas_stub` fixture for overrides. By default the fixture wires `pytest-qgis`'s `qgis_canvas` so projection works for real — set an extent and size on `qgis_canvas`, then drive clicks at project-CRS coordinates with `qfield_bot.click_map_at` / `long_press_map_at`:
 
 ```python
-from PyQt6.QtCore import QPointF
-from qgis.core import QgsRectangle
+from qgis.core import QgsPointXY, QgsRectangle
 
 def test_pick_end_point(qfield_bot, qgis_canvas):
     qgis_canvas.show()
@@ -101,9 +100,22 @@ def test_pick_end_point(qfield_bot, qgis_canvas):
     qgis_canvas.setExtent(QgsRectangle(0, 0, 1000, 1000))
     qgis_canvas.refresh()
 
-    # Pixel (0, 0) is the top-left of the canvas → CRS (0, 1000).
-    qfield_bot.iface.qml_map_canvas.clicked.emit(QPointF(0.0, 0.0), 0)
-    # ...assert your plugin reacted to the picked coordinate
+    qfield_bot.click_map_at(QgsPointXY(500.0, 500.0))
+    # ...assert your plugin reacted to the picked CRS coordinate
+
+    # confirmedClicked (QField's long-press) and non-default click types:
+    qfield_bot.long_press_map_at(QgsPointXY(500.0, 500.0))
+    qfield_bot.click_map_at(QgsPointXY(0.0, 0.0), click_type=1)
+```
+
+Both helpers invert the live `mapSettings.mapToPixel()` transform before emitting, so a plugin handler that does `mapSettings.screenToCoordinate(point)` recovers the CRS coordinate you passed in.
+
+If you need to emit a raw screen-space click (or you've opted out of canvas wiring), reach the signal directly:
+
+```python
+from PyQt6.QtCore import QPointF
+
+qfield_bot.iface.qml_map_canvas.clicked.emit(QPointF(0.0, 0.0), 0)
 ```
 
 If you'd rather skip the canvas setup and pass project-CRS coordinates directly, override the fixture to drop canvas wiring:
@@ -166,6 +178,8 @@ The `qfield_bot` fixture provides several methods to help testing:
 - `show_window()`: Shows the QField main window.
 - `get_item(object_name)`: Finds a QML item by its `objectName`.
 - `click_item(item)`: Simulates a mouse click on a QML item.
+- `click_map_at(crs_point, click_type=0)`: Emits `clicked` on the QML map canvas stub for a tap at a project-CRS coordinate (inverts `mapToPixel` so the plugin's `screenToCoordinate` recovers the input).
+- `long_press_map_at(crs_point, click_type=0)`: Emits `confirmedClicked` (QField's long-press gesture) at a project-CRS coordinate.
 - `load_js_function(js_file, function_name, params)`: Loads a JavaScript function from a file for direct testing.
 
 ## Examples

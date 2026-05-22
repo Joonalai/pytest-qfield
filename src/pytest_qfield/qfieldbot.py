@@ -24,7 +24,7 @@ import pytest_qgis.utils
 from PyQt6.QtCore import QObject, QPointF, Qt, QtMsgType, QUrl
 from PyQt6.QtQml import QQmlComponent
 from PyQt6.QtQuick import QQuickItem
-from qgis.core import QgsProject
+from qgis.core import QgsPointXY, QgsProject
 
 if TYPE_CHECKING:
     from PyQt6.QtQml import QQmlApplicationEngine
@@ -196,6 +196,41 @@ class QFieldBot:
         self.qtbot.mouseClick(
             item.window(), mouse_button, pos=item.mapToScene(center).toPoint()
         )
+
+    def click_map_at(self, crs_point: QgsPointXY, click_type: int = 0) -> None:
+        """
+        Emit ``clicked`` on the QML map canvas stub for a tap at the given
+        project-CRS coordinate.
+
+        The screen point is computed from the live
+        ``qgis_canvas.mapSettings().mapToPixel()`` transform, so a plugin
+        handler that calls ``mapSettings.screenToCoordinate(point)`` will
+        recover ``crs_point``. ``qgis_canvas`` must have an extent and a
+        non-zero size — see the README's MapCanvas Stub section.
+
+        Plugins that opt out of canvas wiring (``QFieldMapCanvasStub()`` with
+        no canvas) should emit ``iface.qml_map_canvas.clicked`` directly
+        with screen-space coordinates instead of using this helper.
+        """
+        self.iface.qml_map_canvas.clicked.emit(
+            self._crs_to_screen(crs_point), click_type
+        )
+
+    def long_press_map_at(self, crs_point: QgsPointXY, click_type: int = 0) -> None:
+        """
+        Emit ``confirmedClicked`` (QField's long-press gesture) at the given
+        project-CRS coordinate. See :meth:`click_map_at` for transform and
+        setup details.
+        """
+        self.iface.qml_map_canvas.confirmedClicked.emit(
+            self._crs_to_screen(crs_point), click_type
+        )
+
+    def _crs_to_screen(self, crs_point: QgsPointXY) -> QPointF:
+        pixel = (
+            self.iface.qgis_map_canvas.mapSettings().mapToPixel().transform(crs_point)
+        )
+        return QPointF(pixel.x(), pixel.y())
 
     def load_qml(self, qml_file: Path, raise_if_warnings: bool = True) -> QObject:
         """
