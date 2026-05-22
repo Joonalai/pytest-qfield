@@ -34,9 +34,11 @@ from pytest_qfield.qfieldbot import QFieldBot
 from pytest_qfield.stub_interface.qfield_stubs import (
     QFieldAppInterfaceStub,
     QFieldFeatureUtilsStub,
+    QFieldGeometryHighlighterStub,
     QFieldGeometryUtilsStub,
     QFieldLayerUtilsStub,
     QFieldPlatformUtilitiesStub,
+    QFieldPositioningStub,
     QFieldStringUtilsStub,
     QFieldThemeStub,
 )
@@ -252,6 +254,49 @@ def qfield_theme_stub() -> QFieldThemeStub:
     Override this fixture to use an extended version of the class if needed.
     """
     return QFieldThemeStub()
+
+
+@pytest.fixture
+def qfield_positioning_stub() -> QFieldPositioningStub:
+    """
+    Stub implementation for Positioning (QML `positionSource`).
+
+    The default stub reports `active = True` and a position at the origin.
+    Override this fixture to inject custom coordinates or simulate inactive
+    positioning.
+    """
+    return QFieldPositioningStub()
+
+
+@pytest.fixture
+def qfield_geometry_highlighter_stub() -> QFieldGeometryHighlighterStub:
+    """
+    Stub implementation for GeometryHighlighter.
+
+    The instance is auto-registered on the iface stub under the
+    `geometryHighlighter` name. Override this fixture to use an extended
+    version of the class if needed.
+    """
+    return QFieldGeometryHighlighterStub()
+
+
+@pytest.fixture(autouse=True)
+def _register_default_named_items(
+    qfield_iface: QFieldAppInterfaceStub,
+    qfield_positioning_stub: QFieldPositioningStub,
+    qfield_geometry_highlighter_stub: QFieldGeometryHighlighterStub,
+) -> None:
+    """
+    Auto-register the default stubs for items typically located via
+    `iface.findItemByObjectName`. Tests that need to assert behaviour when an
+    item is missing can clear the registration with
+    `qfield_iface._named_items.pop(<name>, None)` or override the relevant
+    stub fixture.
+    """
+    qfield_iface.register_named_item("positionSource", qfield_positioning_stub)
+    qfield_iface.register_named_item(
+        "geometryHighlighter", qfield_geometry_highlighter_stub
+    )
 
 
 @pytest.fixture

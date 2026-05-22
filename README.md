@@ -35,6 +35,29 @@ The following stub fixtures correspond to objects available in the QField QML co
 | `qfield_geometry_utils_stub` | `GeometryUtils` | Geometry utility functions. |
 | `qfield_qml_extra_context_properties` | (various) | Dictionary of extra context properties to inject. |
 
+#### Named-Item Stubs
+
+Some QField QML code locates objects through `iface.findItemByObjectName("...")` rather than as context properties. `pytest-qfield` auto-registers default stubs on the iface for the following object names:
+
+| Fixture Name | Registered `objectName` | Description |
+| --- | --- | --- |
+| `qfield_positioning_stub` | `positionSource` | QField `Positioning` item — `active` flag and `projectedPosition` (x, y). |
+| `qfield_geometry_highlighter_stub` | `geometryHighlighter` | `GeometryHighlighter` exposing `geometryWrapper`, `duration`, `visible`, and `update()`. |
+
+Override the relevant fixture to inject custom values (e.g. a fixed position):
+
+```python
+# conftest.py
+import pytest
+from pytest_qfield.stub_interface.qfield_stubs import QFieldPositioningStub
+
+@pytest.fixture
+def qfield_positioning_stub() -> QFieldPositioningStub:
+    return QFieldPositioningStub(x=389870.0, y=6678167.0, active=True)
+```
+
+See [`test/test_named_item_overrides.py`](test/test_named_item_overrides.py) for a complete working example. To assert behaviour when a named item is *missing*, clear the registration on the iface stub or override the fixture to return a sentinel.
+
 #### How to Override
 
 To override a stub, subclass it and redefine the fixture in your `conftest.py` or test module.
@@ -91,6 +114,7 @@ The `qfield_bot` fixture provides several methods to help testing:
 
 - Basic plugin loading/clicking tests: [`test/test_plugin.py`](test/test_plugin.py)
 - Overriding stub fixtures: [`test/test_fixture_override.py`](test/test_fixture_override.py)
+- Overriding auto-registered named-item stubs: [`test/test_named_item_overrides.py`](test/test_named_item_overrides.py)
 - Javascript function tests: [`test/test_javascript_functions.py`](test/test_javascript_functions.py)
 - Stub interface integration: [`test/test_stub_interface.py`](test/test_stub_interface.py)
 - Visual/manual checks: [`test/visual/test_plugin_visually.py`](test/visual/test_plugin_visually.py)

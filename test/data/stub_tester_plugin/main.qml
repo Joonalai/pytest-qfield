@@ -13,6 +13,9 @@ Item {
     Component.onCompleted: {
         iface.addItemToPluginsToolbar(button1);
         iface.addItemToPluginsToolbar(button2);
+        iface.addItemToPluginsToolbar(button3);
+        iface.addItemToPluginsToolbar(button4);
+        iface.addItemToPluginsToolbar(button5);
 
         function setup() {
             pointLayer = qgisProject.mapLayersByName(layerName)[0];
@@ -81,6 +84,67 @@ Item {
 
 
 
+        }
+    }
+
+    QfToolButton {
+        id: button3
+        objectName: "test_position_source"
+
+        bgcolor: Theme.darkGray
+        iconSource: "icon.svg"
+        iconColor: Theme.mainColor
+        round: true
+        onClicked: {
+            const positionSource = iface.findItemByObjectName("positionSource");
+            if (!positionSource) {
+                iface.logMessage("positionSource not found");
+                return;
+            }
+            iface.logMessage(`positionSource active: ${positionSource.active}`);
+            const pos = positionSource.projectedPosition;
+            iface.logMessage(`positionSource x: ${pos.x}`);
+            iface.logMessage(`positionSource y: ${pos.y}`);
+        }
+    }
+
+    QfToolButton {
+        id: button4
+        objectName: "test_geometry_highlighter"
+
+        bgcolor: Theme.darkGray
+        iconSource: "icon.svg"
+        iconColor: Theme.mainColor
+        round: true
+        onClicked: {
+            const highlighter = iface.findItemByObjectName("geometryHighlighter");
+            if (!highlighter) {
+                iface.logMessage("geometryHighlighter not found");
+                return;
+            }
+            highlighter.geometryWrapper.qgsGeometry = GeometryUtils.createGeometryFromWkt("POINT(1 2)");
+            highlighter.duration = 1500;
+            highlighter.visible = true;
+            highlighter.update();
+            iface.logMessage(`highlighter visible: ${highlighter.visible}`);
+            iface.logMessage(`highlighter duration: ${highlighter.duration}`);
+            iface.logMessage(`highlighter geometry: ${highlighter.geometryWrapper.qgsGeometry.asWkt(0)}`);
+            highlighter.geometryWrapper.clear();
+            iface.logMessage(`highlighter geometry after clear: ${highlighter.geometryWrapper.qgsGeometry}`);
+        }
+    }
+
+    QfToolButton {
+        id: button5
+        objectName: "test_unknown_named_item"
+
+        bgcolor: Theme.darkGray
+        iconSource: "icon.svg"
+        iconColor: Theme.mainColor
+        round: true
+        onClicked: {
+            const unknown = iface.findItemByObjectName("doesNotExist");
+            iface.logMessage(`unknown is null: ${unknown === null}`);
         }
     }
 

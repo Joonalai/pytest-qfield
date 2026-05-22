@@ -20,6 +20,11 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from pytest_qfield.stub_interface.qfield_stubs import (
+    QFieldGeometryHighlighterStub,
+    QFieldPositioningStub,
+)
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -81,3 +86,50 @@ def test_features_can_be_iterated_with_stub_interface(qfield_bot: "QFieldBot"):
         "Feature found: 1",
         "Geometry: Point (24 67)",
     ]
+
+
+@pytest.mark.usefixtures("load_stub_plugin")
+def test_position_source_is_auto_registered_with_default_values(
+    qfield_bot: "QFieldBot",
+):
+    qfield_bot.click_item(qfield_bot.get_item("test_position_source"))
+    assert qfield_bot.iface.logged_messages == [
+        "positionSource active: true",
+        "positionSource x: 0",
+        "positionSource y: 0",
+    ]
+
+
+@pytest.mark.usefixtures("load_stub_plugin")
+def test_geometry_highlighter_is_auto_registered_and_mutable_from_qml(
+    qfield_bot: "QFieldBot",
+):
+    qfield_bot.click_item(qfield_bot.get_item("test_geometry_highlighter"))
+    assert qfield_bot.iface.logged_messages == [
+        "highlighter visible: true",
+        "highlighter duration: 1500",
+        "highlighter geometry: Point (1 2)",
+        "highlighter geometry after clear: undefined",
+    ]
+
+
+@pytest.mark.usefixtures("load_stub_plugin")
+def test_unknown_object_name_resolves_to_null(qfield_bot: "QFieldBot"):
+    qfield_bot.click_item(qfield_bot.get_item("test_unknown_named_item"))
+    assert qfield_bot.iface.logged_messages == ["unknown is null: true"]
+
+
+def test_positioning_stub_exposes_constructor_arguments() -> None:
+    stub = QFieldPositioningStub(x=10.5, y=-20.25, active=False)
+    assert stub.active is False
+    assert stub.projectedPosition.x == 10.5
+    assert stub.projectedPosition.y == -20.25
+
+
+def test_geometry_highlighter_stub_clear_resets_wrapper_fields() -> None:
+    stub = QFieldGeometryHighlighterStub()
+    stub.geometryWrapper.crs = "EPSG:3067"
+    stub.geometryWrapper.qgsGeometry = "POINT(1 1)"
+    stub.geometryWrapper.clear()
+    assert stub.geometryWrapper.crs is None
+    assert stub.geometryWrapper.qgsGeometry is None

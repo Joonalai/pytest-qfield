@@ -51,6 +51,7 @@ class QFieldAppInterfaceStub(QObject):
         self._qgis_main_window: QObject | None = None
         self._qml_main_window: QObject | None = None
         self.qgis_map_canvas = qgis_iface.mapCanvas()
+        self._named_items: dict[str, QObject] = {}
 
     @property
     def toast_messages(self) -> list[str]:
@@ -104,6 +105,30 @@ class QFieldAppInterfaceStub(QObject):
             raise RuntimeError("Plugins toolbar row not found")
         _item.setSize(QSizeF(48, 48))
         _item.setParentItem(toolbar_row)
+
+    def register_named_item(self, object_name: str, item: QObject) -> None:
+        """
+        Register a QObject so it can later be located via
+        ``findItemByObjectName``.
+
+        Mirrors how QField builds its item registry by ``objectName``. Tests
+        usually do not call this directly; the ``pytest-qfield`` plugin
+        auto-registers default stubs (e.g. ``positionSource``,
+        ``geometryHighlighter``) for fixtures of the same name.
+        """
+        self._named_items[object_name] = item
+
+    @pyqtSlot(str, result=QObject)
+    def findItemByObjectName(self, name: str) -> QObject | None:
+        """
+        Stub implementation of ``AppInterface.findItemByObjectName``.
+
+        https://api.qfield.org/QField/classAppInterface/
+
+        Returns the QObject previously passed to
+        :meth:`register_named_item`, or ``None`` if no such item is registered.
+        """
+        return self._named_items.get(name)
 
     @pyqtSlot(str)
     @pyqtSlot(str, str)
@@ -210,6 +235,147 @@ class FeatureIteratorStub(QObject):
     @pyqtSlot()
     def close(self) -> None:
         self.closed = True
+
+
+class QFieldProjectedPositionStub(QObject):
+    """
+    Stub for the QgsPoint returned by ``Positioning.projectedPosition``.
+    """
+
+    def __init__(
+        self,
+        x: float = 0.0,
+        y: float = 0.0,
+        parent: QObject | None = None,
+    ) -> None:
+        super().__init__(parent=parent)
+        self._x = x
+        self._y = y
+
+    @pyqtProperty(float, constant=True)
+    def x(self) -> float:
+        return self._x
+
+    @pyqtProperty(float, constant=True)
+    def y(self) -> float:
+        return self._y
+
+
+class QFieldPositioningStub(QObject):
+    """
+    Stub implementation for Positioning, the QML ``positionSource`` item.
+
+    https://github.com/opengisch/QField/blob/master/src/core/positioning/positioning.h
+    """
+
+    def __init__(
+        self,
+        x: float = 0.0,
+        y: float = 0.0,
+        active: bool = True,
+        parent: QObject | None = None,
+    ) -> None:
+        super().__init__(parent=parent)
+        self._projected_position = QFieldProjectedPositionStub(x, y, parent=self)
+        self._active = active
+
+    @pyqtProperty(QObject, constant=True)
+    def projectedPosition(self) -> QFieldProjectedPositionStub:
+        return self._projected_position
+
+    @pyqtProperty(bool, constant=True)
+    def active(self) -> bool:
+        return self._active
+
+
+class QFieldGeometryWrapperStub(QObject):
+    """
+    Stub implementation for GeometryWrapper.
+
+    https://github.com/opengisch/QField/blob/master/src/core/utils/geometrywrapper.h
+    """
+
+    crsChanged = pyqtSignal()
+    qgsGeometryChanged = pyqtSignal()
+
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent=parent)
+        self._crs: object = None
+        self._qgs_geometry: object = None
+
+    @pyqtProperty("QVariant", notify=crsChanged)
+    def crs(self) -> object:
+        return self._crs
+
+    @crs.setter  # type: ignore[no-redef]
+    def crs(self, value: object) -> None:
+        if self._crs == value:
+            return
+        self._crs = value
+        self.crsChanged.emit()
+
+    @pyqtProperty("QVariant", notify=qgsGeometryChanged)
+    def qgsGeometry(self) -> object:
+        return self._qgs_geometry
+
+    @qgsGeometry.setter  # type: ignore[no-redef]
+    def qgsGeometry(self, value: object) -> None:
+        if self._qgs_geometry == value:
+            return
+        self._qgs_geometry = value
+        self.qgsGeometryChanged.emit()
+
+    @pyqtSlot()
+    def clear(self) -> None:
+        self.crs = None  # type: ignore[method-assign]
+        self.qgsGeometry = None  # type: ignore[method-assign]
+
+
+class QFieldGeometryHighlighterStub(QObject):
+    """
+    Stub implementation for GeometryHighlighter.
+
+    https://github.com/opengisch/QField/blob/master/src/core/utils/geometryhighlighter.h
+    """
+
+    durationChanged = pyqtSignal()
+    visibleChanged = pyqtSignal()
+
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent=parent)
+        self._geometry_wrapper = QFieldGeometryWrapperStub(parent=self)
+        self._duration = 0
+        self._visible = False
+
+    @pyqtProperty(QObject, constant=True)
+    def geometryWrapper(self) -> QFieldGeometryWrapperStub:
+        return self._geometry_wrapper
+
+    @pyqtProperty(int, notify=durationChanged)
+    def duration(self) -> int:
+        return self._duration
+
+    @duration.setter  # type: ignore[no-redef]
+    def duration(self, value: int) -> None:
+        if self._duration == value:
+            return
+        self._duration = int(value)
+        self.durationChanged.emit()
+
+    @pyqtProperty(bool, notify=visibleChanged)
+    def visible(self) -> bool:
+        return self._visible
+
+    @visible.setter  # type: ignore[no-redef]
+    def visible(self, value: bool) -> None:
+        if self._visible == value:
+            return
+        self._visible = bool(value)
+        self.visibleChanged.emit()
+
+    @pyqtSlot()
+    def update(self) -> None:
+        pass
 
 
 class QFieldFeatureUtilsStub(QObject):
