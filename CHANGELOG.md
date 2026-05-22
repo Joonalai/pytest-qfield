@@ -1,6 +1,22 @@
 # CHANGELOG
 
 
+## v0.6.0 (2026-05-22)
+
+### Bug Fixes
+
+- Pin C++ ownership in register_named_item so QML lookups don't reassign
+  ([`963c8af`](https://github.com/Joonalai/pytest-qfield/commit/963c8afee97975b0e3299c3907f7444efeec3cd9))
+
+### Features
+
+- Add click_map_at and long_press_map_at QFieldBot helpers
+  ([`8bab5bc`](https://github.com/Joonalai/pytest-qfield/commit/8bab5bc8a96a41355ea638a66af04b053b35239e))
+
+- Add featureForm named-item stub
+  ([`b55b90e`](https://github.com/Joonalai/pytest-qfield/commit/b55b90e96379936a4ac62ef0057295780abf8a7a))
+
+
 ## v0.5.0 (2026-05-22)
 
 ### Features
