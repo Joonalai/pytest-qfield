@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING
 
 from PyQt6.QtCore import QObject, QPointF, QSizeF, pyqtProperty, pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QColor, QFont
+from PyQt6.QtQml import QQmlEngine
 from PyQt6.QtQuick import QQuickItem
 from qgis.core import QgsFeatureRequest, QgsGeometry, QgsVectorLayerUtils
 
@@ -119,6 +120,12 @@ class QFieldAppInterfaceStub(QObject):
         auto-registers default stubs (e.g. ``positionSource``,
         ``geometryHighlighter``) for fixtures of the same name.
         """
+        # findItemByObjectName returns a QObject through a pyqtSlot, which
+        # flips the wrapper's ownership to JavaScriptOwnership. The next time
+        # QML GCs that wrapper it would deleteLater() the underlying object
+        # behind the Python ref held below — pin to C++ so Python stays the
+        # sole authority over lifetime.
+        QQmlEngine.setObjectOwnership(item, QQmlEngine.ObjectOwnership.CppOwnership)
         self._named_items[object_name] = item
 
     @pyqtSlot(str, result=QObject)
