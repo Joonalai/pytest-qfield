@@ -19,9 +19,13 @@
 from typing import TYPE_CHECKING
 
 import pytest
+from PyQt6.QtCore import QPointF
+from qgis.core import QgsRectangle
 
 from pytest_qfield.stub_interface.qfield_stubs import (
     QFieldGeometryHighlighterStub,
+    QFieldMapCanvasStub,
+    QFieldMapSettingsStub,
     QFieldPositioningStub,
 )
 
@@ -29,9 +33,17 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from qgis.core import QgsVectorLayer
+    from qgis.gui import QgsMapCanvas
 
     from pytest_qfield.qfieldbot import QFieldBot
     from pytest_qfield.stub_interface.qgis_stubs import QgsProjectStub
+
+
+@pytest.fixture
+def qfield_map_canvas_stub() -> QFieldMapCanvasStub:
+    """Override the default fixture: use identity ``screenToCoordinate`` so
+    the QML signal-propagation tests can assert on the exact emitted point."""
+    return QFieldMapCanvasStub()
 
 
 @pytest.fixture
@@ -133,3 +145,66 @@ def test_geometry_highlighter_stub_clear_resets_wrapper_fields() -> None:
     stub.geometryWrapper.clear()
     assert stub.geometryWrapper.crs is None
     assert stub.geometryWrapper.qgsGeometry is None
+
+
+@pytest.mark.usefixtures("load_stub_plugin")
+def test_map_canvas_clicked_signal_propagates_to_qml(qfield_bot: "QFieldBot"):
+    qfield_bot.iface.qml_map_canvas.clicked.emit(QPointF(389870.0, 6678167.0), 2)
+    assert qfield_bot.iface.logged_messages == [
+        "clicked x: 389870",
+        "clicked y: 6678167",
+        "clicked type: 2",
+    ]
+
+
+@pytest.mark.usefixtures("load_stub_plugin")
+def test_map_canvas_confirmed_clicked_signal_propagates_to_qml(
+    qfield_bot: "QFieldBot",
+):
+    qfield_bot.iface.qml_map_canvas.confirmedClicked.emit(
+        QPointF(389890.0, 6678200.0), 0
+    )
+    assert qfield_bot.iface.logged_messages == [
+        "confirmed x: 389890",
+        "confirmed y: 6678200",
+    ]
+
+
+def test_map_canvas_is_returned_by_iface_map_canvas(qfield_bot: "QFieldBot"):
+    assert qfield_bot.iface.mapCanvas() is qfield_bot.iface.qml_map_canvas
+
+
+def test_screen_to_coordinate_is_identity_when_no_canvas_wired() -> None:
+    settings = QFieldMapSettingsStub()
+    point = QPointF(389870.0, 6678167.0)
+    assert settings.screenToCoordinate(point) == point
+
+
+def test_screen_to_coordinate_delegates_to_qgis_canvas(
+    qgis_canvas: "QgsMapCanvas",
+) -> None:
+    qgis_canvas.show()
+    qgis_canvas.resize(200, 200)
+    qgis_canvas.setExtent(QgsRectangle(0.0, 0.0, 200.0, 200.0))
+    qgis_canvas.refresh()
+    canvas = QFieldMapCanvasStub(qgis_map_canvas=qgis_canvas)
+
+    # Pixel (0, 0) is top-left of the canvas, which maps to the
+    # top-left of the extent: (extent_min_x, extent_max_y) = (0, 200).
+    top_left = canvas.mapSettings.screenToCoordinate(QPointF(0.0, 0.0))
+    # Bottom-right pixel maps to (extent_max_x, extent_min_y) = (200, 0).
+    bottom_right_size = qgis_canvas.mapSettings().outputSize()
+    bottom_right = canvas.mapSettings.screenToCoordinate(
+        QPointF(float(bottom_right_size.width()), float(bottom_right_size.height()))
+    )
+
+    # The widget has small margins, so allow a couple of CRS units tolerance.
+    assert top_left.x() == pytest.approx(0.0, abs=2.0)
+    assert top_left.y() == pytest.approx(200.0, abs=2.0)
+    assert bottom_right.x() == pytest.approx(200.0, abs=2.0)
+    assert bottom_right.y() == pytest.approx(0.0, abs=2.0)
+
+
+def test_map_canvas_stub_exposes_map_settings() -> None:
+    canvas = QFieldMapCanvasStub()
+    assert isinstance(canvas.mapSettings, QFieldMapSettingsStub)

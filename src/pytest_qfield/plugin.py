@@ -37,6 +37,7 @@ from pytest_qfield.stub_interface.qfield_stubs import (
     QFieldGeometryHighlighterStub,
     QFieldGeometryUtilsStub,
     QFieldLayerUtilsStub,
+    QFieldMapCanvasStub,
     QFieldPlatformUtilitiesStub,
     QFieldPositioningStub,
     QFieldStringUtilsStub,
@@ -280,23 +281,42 @@ def qfield_geometry_highlighter_stub() -> QFieldGeometryHighlighterStub:
     return QFieldGeometryHighlighterStub()
 
 
+@pytest.fixture
+def qfield_map_canvas_stub(qgis_canvas: "QgsMapCanvas") -> QFieldMapCanvasStub:
+    """
+    Stub implementation for the QML MapCanvas item returned by
+    `iface.mapCanvas()`.
+
+    The default stub wires the real pytest-qgis `qgis_canvas`.
+    """
+    return QFieldMapCanvasStub(qgis_map_canvas=qgis_canvas)
+
+
 @pytest.fixture(autouse=True)
-def _register_default_named_items(
+def _attach_default_iface_stubs(
     qfield_iface: QFieldAppInterfaceStub,
     qfield_positioning_stub: QFieldPositioningStub,
     qfield_geometry_highlighter_stub: QFieldGeometryHighlighterStub,
+    qfield_map_canvas_stub: QFieldMapCanvasStub,
 ) -> None:
     """
-    Auto-register the default stubs for items typically located via
-    `iface.findItemByObjectName`. Tests that need to assert behaviour when an
-    item is missing can clear the registration with
-    `qfield_iface._named_items.pop(<name>, None)` or override the relevant
+    Auto-wire default stubs onto the iface before QML loads:
+
+    - ``positionSource`` and ``geometryHighlighter`` are registered as named
+      items reachable via ``iface.findItemByObjectName``.
+    - The map canvas stub is set as ``iface.qml_map_canvas`` and returned by
+      ``iface.mapCanvas()``.
+
+    Tests that need to assert behaviour when a named item is missing can
+    clear its registration with
+    ``qfield_iface._named_items.pop(<name>, None)`` or override the relevant
     stub fixture.
     """
     qfield_iface.register_named_item("positionSource", qfield_positioning_stub)
     qfield_iface.register_named_item(
         "geometryHighlighter", qfield_geometry_highlighter_stub
     )
+    qfield_iface.qml_map_canvas = qfield_map_canvas_stub
 
 
 @pytest.fixture
