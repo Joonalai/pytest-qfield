@@ -33,6 +33,7 @@ from qgis.core import QgsProject
 from pytest_qfield.qfieldbot import QFieldBot
 from pytest_qfield.stub_interface.qfield_stubs import (
     QFieldAppInterfaceStub,
+    QFieldFeatureListFormStub,
     QFieldFeatureUtilsStub,
     QFieldGeometryHighlighterStub,
     QFieldGeometryUtilsStub,
@@ -282,6 +283,18 @@ def qfield_geometry_highlighter_stub() -> QFieldGeometryHighlighterStub:
 
 
 @pytest.fixture
+def qfield_feature_list_form_stub() -> QFieldFeatureListFormStub:
+    """
+    Stub implementation for FeatureListForm (QML objectName `featureForm`).
+
+    The instance is auto-registered on the iface stub under the `featureForm`
+    name so plugins can locate it via `iface.findItemByObjectName`. Override
+    this fixture to use an extended version of the class if needed.
+    """
+    return QFieldFeatureListFormStub()
+
+
+@pytest.fixture
 def qfield_map_canvas_stub(qgis_canvas: "QgsMapCanvas") -> QFieldMapCanvasStub:
     """
     Stub implementation for the QML MapCanvas item returned by
@@ -297,13 +310,15 @@ def _attach_default_iface_stubs(
     qfield_iface: QFieldAppInterfaceStub,
     qfield_positioning_stub: QFieldPositioningStub,
     qfield_geometry_highlighter_stub: QFieldGeometryHighlighterStub,
+    qfield_feature_list_form_stub: QFieldFeatureListFormStub,
     qfield_map_canvas_stub: QFieldMapCanvasStub,
 ) -> None:
     """
     Auto-wire default stubs onto the iface before QML loads:
 
-    - ``positionSource`` and ``geometryHighlighter`` are registered as named
-      items reachable via ``iface.findItemByObjectName``.
+    - ``positionSource``, ``geometryHighlighter`` and ``featureForm`` are
+      registered as named items reachable via
+      ``iface.findItemByObjectName``.
     - The map canvas stub is set as ``iface.qml_map_canvas`` and returned by
       ``iface.mapCanvas()``.
 
@@ -316,6 +331,7 @@ def _attach_default_iface_stubs(
     qfield_iface.register_named_item(
         "geometryHighlighter", qfield_geometry_highlighter_stub
     )
+    qfield_iface.register_named_item("featureForm", qfield_feature_list_form_stub)
     qfield_iface.qml_map_canvas = qfield_map_canvas_stub
 
 

@@ -43,6 +43,27 @@ Some QField QML code locates objects through `iface.findItemByObjectName("...")`
 | --- | --- | --- |
 | `qfield_positioning_stub` | `positionSource` | QField `Positioning` item — `active` flag and `projectedPosition` (x, y). |
 | `qfield_geometry_highlighter_stub` | `geometryHighlighter` | `GeometryHighlighter` exposing `geometryWrapper`, `duration`, `visible`, and `update()`. |
+| `qfield_feature_list_form_stub` | `featureForm` | `FeatureListForm` — drive an existing feature's attribute form via `model.setFeatures(layer, filter)`, `selection.focusedItem`, and `state` (`"FeatureFormEdit"` / `"FeatureForm"`). The QML id is `featureListForm` but plugins look it up by `objectName` `"featureForm"`. |
+
+For the form stub, tests typically drive the canonical pattern from QML and assert on the captured calls:
+
+```js
+// in your plugin's QML
+const form = iface.findItemByObjectName("featureForm");
+form.model.setFeatures(layer, "id = '" + uuid + "'");
+form.selection.focusedItem = 0;
+form.state = "FeatureFormEdit";
+```
+
+```python
+def test_form_was_opened(qfield_feature_list_form_stub):
+    (recorded_layer, recorded_filter), = (
+        qfield_feature_list_form_stub.model.set_features_calls
+    )
+    assert recorded_layer.name == "points"
+    assert recorded_filter == "id = 'abc'"
+    assert qfield_feature_list_form_stub.state == "FeatureFormEdit"
+```
 
 Override the relevant fixture to inject custom values (e.g. a fixed position):
 
