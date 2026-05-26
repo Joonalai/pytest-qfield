@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.6.1 (2026-05-26)
+
+### Bug Fixes
+
+- Pin C++ ownership and retain Python refs for stubs returned to QML
+  ([`92d645b`](https://github.com/Joonalai/pytest-qfield/commit/92d645baa25a9b3d59d65e0402ac0886c2d0feb2))
+
+
 ## v0.6.0 (2026-05-22)
 
 ### Bug Fixes
