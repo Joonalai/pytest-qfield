@@ -15,6 +15,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
+"""
+Stub implementations of QField's QML-facing classes.
+
+See :mod:`pytest_qfield.stub_interface.qgis_stubs` for the
+``CppOwnership`` pin + ``_pinned_*_stubs`` retention convention used by slots
+and properties that return fresh ``QObject`` subclasses to QML.
+"""
+
 import uuid
 from typing import TYPE_CHECKING
 
@@ -179,12 +187,20 @@ class QFieldGeometryUtilsStub(QObject):
     https://api.qfield.org/QField/classGeometryUtils/
     """
 
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent=parent)
+        self._pinned_geometry_stubs: list[QgsGeometryStub] = []
+
     # TODO: add point method
 
     @pyqtSlot(str, result=QObject)
     def createGeometryFromWkt(self, wkt: str) -> QgsGeometryStub:
         geometry_stub = QgsGeometryStub(QgsGeometry.fromWkt(wkt))
         geometry_stub.setParent(self)
+        QQmlEngine.setObjectOwnership(
+            geometry_stub, QQmlEngine.ObjectOwnership.CppOwnership
+        )
+        self._pinned_geometry_stubs.append(geometry_stub)
         return geometry_stub
 
 
@@ -194,6 +210,10 @@ class QFieldLayerUtilsStub(QObject):
 
     https://api.qfield.org/QField/classLayerUtils
     """
+
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent=parent)
+        self._pinned_iterator_stubs: list[FeatureIteratorStub] = []
 
     @pyqtSlot(QObject, QObject, result=bool)
     def addFeature(self, layer: QgsVectorLayerStub, feature: QgsFeatureStub) -> bool:
@@ -209,6 +229,10 @@ class QFieldLayerUtilsStub(QObject):
             layer, QgsFeatureRequest().setFilterExpression(expression)
         )
         iterator_stub.setParent(self)
+        QQmlEngine.setObjectOwnership(
+            iterator_stub, QQmlEngine.ObjectOwnership.CppOwnership
+        )
+        self._pinned_iterator_stubs.append(iterator_stub)
         return iterator_stub
 
     def get_iterators(self) -> list["FeatureIteratorStub"]:
@@ -230,6 +254,7 @@ class FeatureIteratorStub(QObject):
         self._features = list(layer.qgis_layer.getFeatures(self.request))
         self.iterated_count = 0
         self.closed = False
+        self._pinned_feature_stubs: list[QgsFeatureStub] = []
 
     @pyqtSlot(result=bool)
     def hasNext(self) -> bool:
@@ -239,6 +264,10 @@ class FeatureIteratorStub(QObject):
     def next(self) -> QgsFeatureStub:
         feature_stub = QgsFeatureStub(self._features[self.iterated_count])
         feature_stub.setParent(self)
+        QQmlEngine.setObjectOwnership(
+            feature_stub, QQmlEngine.ObjectOwnership.CppOwnership
+        )
+        self._pinned_feature_stubs.append(feature_stub)
         self.iterated_count += 1
         return feature_stub
 
@@ -540,6 +569,10 @@ class QFieldFeatureUtilsStub(QObject):
     https://api.qfield.org/QField/classFeatureUtils/
     """
 
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent=parent)
+        self._pinned_feature_stubs: list[QgsFeatureStub] = []
+
     @pyqtSlot(QObject, result=QObject)
     @pyqtSlot(QObject, QObject, result=QObject)
     def createFeature(
@@ -551,6 +584,8 @@ class QFieldFeatureUtilsStub(QObject):
         )
         stub = QgsFeatureStub(feature)
         stub.setParent(self)
+        QQmlEngine.setObjectOwnership(stub, QQmlEngine.ObjectOwnership.CppOwnership)
+        self._pinned_feature_stubs.append(stub)
         return stub
 
 

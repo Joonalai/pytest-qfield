@@ -15,6 +15,16 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
+"""
+Stub implementations of the QGIS classes QField exposes to QML.
+
+Slots and properties that hand fresh ``QObject`` subclasses to QML must pin
+``CppOwnership`` and append the stub to a ``_pinned_*_stubs`` list on the
+parent. Without both, QML's JS engine may ``deleteLater`` the C++ object or
+Python may GC the wrapper; the next slot handed the bare ``QObject`` back
+then rebuilds a plain wrapper without the Python attributes (e.g.
+``qgis_layer``) and crashes on first access.
+"""
 
 from typing import TYPE_CHECKING, Any, cast
 
@@ -26,6 +36,7 @@ from PyQt6.QtCore import (
     pyqtSignal,
     pyqtSlot,
 )
+from PyQt6.QtQml import QQmlEngine
 from qgis.core import QgsRasterLayer, QgsVectorLayer
 
 if TYPE_CHECKING:
@@ -71,6 +82,7 @@ class QgsVectorLayerStub(QgsMapLayerStub):
         super().__init__(qgis_layer)
         self.qgis_layer: QgsVectorLayer = cast("QgsVectorLayer", self.qgis_layer)
         self.qgis_layer.featureAdded.connect(self.featureAdded.emit)
+        self._pinned_feature_stubs: list[QgsFeatureStub] = []
 
     @pyqtSlot(result=bool)
     def startEditing(self) -> bool:
@@ -85,6 +97,8 @@ class QgsVectorLayerStub(QgsMapLayerStub):
     def getFeature(self, feature_id: int) -> "QgsFeatureStub":
         stub = QgsFeatureStub(self.qgis_layer.getFeature(feature_id))
         stub.setParent(self)
+        QQmlEngine.setObjectOwnership(stub, QQmlEngine.ObjectOwnership.CppOwnership)
+        self._pinned_feature_stubs.append(stub)
         return stub
 
 
@@ -108,15 +122,18 @@ class QgsProjectStub(QObject):
     def __init__(self, qgis_project: "QgsProject") -> None:
         super().__init__(parent=qgis_project)
         self.qgis_project = qgis_project
+        self._pinned_layer_stubs: list[QgsMapLayerStub] = []
 
     @pyqtSlot(str, result=list)
-    def mapLayersByName(self, name: str) -> list[QgsVectorLayerStub]:
-        return list(
-            map(
-                QgsMapLayerStub.create_from_qgs_map_layer,
-                self.qgis_project.mapLayersByName(name),
-            )
-        )
+    def mapLayersByName(self, name: str) -> list[QgsMapLayerStub]:
+        stubs = [
+            QgsMapLayerStub.create_from_qgs_map_layer(layer)
+            for layer in self.qgis_project.mapLayersByName(name)
+        ]
+        for stub in stubs:
+            QQmlEngine.setObjectOwnership(stub, QQmlEngine.ObjectOwnership.CppOwnership)
+        self._pinned_layer_stubs.extend(stubs)
+        return stubs
 
 
 class QSettingsStub(QSettings):
@@ -130,6 +147,7 @@ class QgsFeatureStub(QObject):
     def __init__(self, qgis_feature: "QgsFeature") -> None:
         super().__init__(parent=None)
         self.qgis_feature = qgis_feature
+        self._pinned_geometry_stubs: list[QgsGeometryStub] = []
 
     @pyqtProperty(int)
     def id(self) -> int:
@@ -150,6 +168,10 @@ class QgsFeatureStub(QObject):
     def geometry(self) -> "QgsGeometryStub":
         geometry_stub = QgsGeometryStub(self.qgis_feature.geometry())
         geometry_stub.setParent(self)
+        QQmlEngine.setObjectOwnership(
+            geometry_stub, QQmlEngine.ObjectOwnership.CppOwnership
+        )
+        self._pinned_geometry_stubs.append(geometry_stub)
         return geometry_stub
 
 
