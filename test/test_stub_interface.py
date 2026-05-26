@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
 
+import gc
 from typing import TYPE_CHECKING
 
 import pytest
 from PyQt6.QtCore import QPointF
+from PyQt6.QtQml import QQmlEngine
 from qgis.core import QgsRectangle
 
 from pytest_qfield.stub_interface.qfield_stubs import (
@@ -36,6 +38,11 @@ if TYPE_CHECKING:
     from qgis.gui import QgsMapCanvas
 
     from pytest_qfield.qfieldbot import QFieldBot
+    from pytest_qfield.stub_interface.qfield_stubs import (
+        QFieldFeatureUtilsStub,
+        QFieldGeometryUtilsStub,
+        QFieldLayerUtilsStub,
+    )
     from pytest_qfield.stub_interface.qgis_stubs import QgsProjectStub
 
 
@@ -208,3 +215,124 @@ def test_screen_to_coordinate_delegates_to_qgis_canvas(
 def test_map_canvas_stub_exposes_map_settings() -> None:
     canvas = QFieldMapCanvasStub()
     assert isinstance(canvas.mapSettings, QFieldMapSettingsStub)
+
+
+def test_map_layers_by_name_pins_layer_stub_ownership(
+    qfield_bot: "QFieldBot",
+    tmp_path: "Path",
+    layer_points: "QgsVectorLayer",
+    qgs_project_stub: "QgsProjectStub",
+):
+    """
+    Layer stubs returned from ``mapLayersByName`` must be pinned to
+    ``CppOwnership`` and retained on ``QgsProjectStub``. Otherwise QML's JS
+    engine treats them as JS-owned, Python GCs the wrapper after the slot
+    returns, and a subsequent slot handed the bare QObject back rebuilds a
+    plain wrapper without the ``qgis_layer`` attribute — breaking e.g.
+    ``LayerUtils.createFeatureIteratorFromExpression(layer, ...)``. The
+    crash is racey in practice (reproducible by forcing ``gc.collect()``
+    before the slot returns), so this test checks the invariants directly.
+    """
+    assert qgs_project_stub.qgis_project.addMapLayer(layer_points)
+    probe_qml = tmp_path / "map_layers_probe.qml"
+    probe_qml.write_text("""
+import QtQuick
+
+Item {
+    function fetch() {
+        qgisProject.mapLayersByName("points");
+    }
+}
+""")
+    root = qfield_bot.load_qml(probe_qml)
+    root.fetch()
+
+    assert len(qgs_project_stub._pinned_layer_stubs) == 1
+    [stub] = qgs_project_stub._pinned_layer_stubs
+    assert stub.qgis_layer is layer_points
+    assert QQmlEngine.objectOwnership(stub) == (QQmlEngine.ObjectOwnership.CppOwnership)
+
+    # After dropping local refs and forcing GC, the pinned ref on the project
+    # stub must keep the wrapper alive so a subsequent slot can still touch
+    # the Python ``qgis_layer`` attribute.
+    del stub
+    gc.collect()
+    [stub_again] = qgs_project_stub.mapLayersByName("points")
+    assert stub_again.qgis_layer is layer_points
+
+
+def test_get_feature_pins_feature_and_geometry_stubs(
+    layer_points: "QgsVectorLayer",
+    qgs_project_stub: "QgsProjectStub",
+):
+    """
+    Companion to ``mapLayersByName``: ``QgsVectorLayerStub.getFeature`` and
+    ``QgsFeatureStub.geometry`` also hand fresh stubs to QML and need the
+    same pin + retain treatment so the Python ``qgis_feature`` /
+    ``qgis_geometry`` attributes survive a GC cycle.
+    """
+    assert qgs_project_stub.qgis_project.addMapLayer(layer_points)
+    [layer_stub] = qgs_project_stub.mapLayersByName("points")
+    [feature_id] = layer_stub.qgis_layer.allFeatureIds()[:1]
+
+    feature_stub = layer_stub.getFeature(feature_id)
+    assert feature_stub in layer_stub._pinned_feature_stubs
+    assert QQmlEngine.objectOwnership(feature_stub) == (
+        QQmlEngine.ObjectOwnership.CppOwnership
+    )
+
+    geometry_stub = feature_stub.geometry
+    assert geometry_stub in feature_stub._pinned_geometry_stubs
+    assert QQmlEngine.objectOwnership(geometry_stub) == (
+        QQmlEngine.ObjectOwnership.CppOwnership
+    )
+
+
+def test_create_geometry_from_wkt_pins_geometry_stub(
+    qfield_geometry_utils_stub: "QFieldGeometryUtilsStub",
+):
+    geometry_stub = qfield_geometry_utils_stub.createGeometryFromWkt("POINT(1 2)")
+    assert geometry_stub in qfield_geometry_utils_stub._pinned_geometry_stubs
+    assert QQmlEngine.objectOwnership(geometry_stub) == (
+        QQmlEngine.ObjectOwnership.CppOwnership
+    )
+
+
+def test_feature_iterator_pins_iterator_and_next_features(
+    layer_points: "QgsVectorLayer",
+    qgs_project_stub: "QgsProjectStub",
+    qfield_layer_utils_stub: "QFieldLayerUtilsStub",
+):
+    assert qgs_project_stub.qgis_project.addMapLayer(layer_points)
+    [layer_stub] = qgs_project_stub.mapLayersByName("points")
+
+    iterator = qfield_layer_utils_stub.createFeatureIteratorFromExpression(
+        layer_stub, "1=1"
+    )
+    assert iterator in qfield_layer_utils_stub._pinned_iterator_stubs
+    assert QQmlEngine.objectOwnership(iterator) == (
+        QQmlEngine.ObjectOwnership.CppOwnership
+    )
+
+    assert iterator.hasNext()
+    feature_stub = iterator.next()
+    assert feature_stub in iterator._pinned_feature_stubs
+    assert QQmlEngine.objectOwnership(feature_stub) == (
+        QQmlEngine.ObjectOwnership.CppOwnership
+    )
+    iterator.close()
+
+
+def test_create_feature_pins_feature_stub(
+    layer_points: "QgsVectorLayer",
+    qgs_project_stub: "QgsProjectStub",
+    qfield_feature_utils_stub: "QFieldFeatureUtilsStub",
+):
+    assert qgs_project_stub.qgis_project.addMapLayer(layer_points)
+    [layer_stub] = qgs_project_stub.mapLayersByName("points")
+
+    feature_stub = qfield_feature_utils_stub.createFeature(layer_stub)
+    assert feature_stub in qfield_feature_utils_stub._pinned_feature_stubs
+    assert QQmlEngine.objectOwnership(feature_stub) == (
+        QQmlEngine.ObjectOwnership.CppOwnership
+    )
