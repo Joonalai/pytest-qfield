@@ -219,6 +219,24 @@ class QFieldLayerUtilsStub(QObject):
     def addFeature(self, layer: QgsVectorLayerStub, feature: QgsFeatureStub) -> bool:
         return layer.qgis_layer.addFeature(feature.qgis_feature)
 
+    @pyqtSlot(QObject, QObject, "qlonglong", result=bool)
+    @pyqtSlot(QObject, QObject, "qlonglong", bool, result=bool)
+    def deleteFeature(
+        self,
+        _project: QObject,
+        layer: QgsVectorLayerStub,
+        fid: int,
+        _flush_buffer: bool = True,
+    ) -> bool:
+        # The real LayerUtils::deleteFeature manages its own edit session and
+        # cascades to related features; the stub just runs a start/delete/commit
+        # cycle. ``project`` and ``flushBuffer`` are part of the QField contract
+        # but aren't needed to exercise plugin delete paths.
+        if not layer.qgis_layer.startEditing():
+            return False
+        deleted = layer.qgis_layer.deleteFeature(fid)
+        return deleted and layer.qgis_layer.commitChanges()
+
     @pyqtSlot(QObject, str, result=QObject)
     def createFeatureIteratorFromExpression(
         self,
