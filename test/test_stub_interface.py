@@ -352,3 +352,47 @@ def test_delete_feature_removes_feature_via_stub_interface(
     assert deleted is True
     assert fid not in layer_points.allFeatureIds()
     assert not layer_points.isEditable()
+
+
+def test_delete_feature_keeps_open_edit_session_uncommitted(
+    layer_points: "QgsVectorLayer",
+    qgs_project_stub: "QgsProjectStub",
+    qfield_layer_utils_stub: "QFieldLayerUtilsStub",
+):
+    """When the caller is already editing and ``flushBuffer`` is false, the
+    delete stays in the edit buffer: the layer keeps editing and a rollback
+    restores the feature."""
+    assert qgs_project_stub.qgis_project.addMapLayer(layer_points)
+    [layer_stub] = qgs_project_stub.mapLayersByName("points")
+    fid = layer_points.allFeatureIds()[0]
+    assert layer_points.startEditing()
+
+    deleted = qfield_layer_utils_stub.deleteFeature(
+        qgs_project_stub, layer_stub, fid, False
+    )
+
+    assert deleted is True
+    assert fid not in layer_points.allFeatureIds()
+    assert layer_points.isEditable()
+    assert layer_points.rollBack()
+    assert fid in layer_points.allFeatureIds()
+
+
+def test_delete_feature_flushes_open_edit_session_when_requested(
+    layer_points: "QgsVectorLayer",
+    qgs_project_stub: "QgsProjectStub",
+    qfield_layer_utils_stub: "QFieldLayerUtilsStub",
+):
+    """``flushBuffer`` true commits even an edit session the caller opened."""
+    assert qgs_project_stub.qgis_project.addMapLayer(layer_points)
+    [layer_stub] = qgs_project_stub.mapLayersByName("points")
+    fid = layer_points.allFeatureIds()[0]
+    assert layer_points.startEditing()
+
+    deleted = qfield_layer_utils_stub.deleteFeature(
+        qgs_project_stub, layer_stub, fid, True
+    )
+
+    assert deleted is True
+    assert fid not in layer_points.allFeatureIds()
+    assert not layer_points.isEditable()
