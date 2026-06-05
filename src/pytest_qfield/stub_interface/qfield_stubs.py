@@ -226,16 +226,21 @@ class QFieldLayerUtilsStub(QObject):
         _project: QObject,
         layer: QgsVectorLayerStub,
         fid: int,
-        _flush_buffer: bool = True,
+        flush_buffer: bool = True,
     ) -> bool:
-        # The real LayerUtils::deleteFeature manages its own edit session and
-        # cascades to related features; the stub just runs a start/delete/commit
-        # cycle. ``project`` and ``flushBuffer`` are part of the QField contract
-        # but aren't needed to exercise plugin delete paths.
-        if not layer.qgis_layer.startEditing():
+        # The real LayerUtils::deleteFeature cascades to related features; the
+        # stub just deletes ``fid``. It respects an already-open edit session:
+        # only start editing when the layer wasn't editable, and only commit
+        # when ``flushBuffer`` is set or we opened the session ourselves — so a
+        # caller mid-edit keeps its uncommitted buffer. ``project`` is part of
+        # the QField contract but isn't needed to exercise plugin delete paths.
+        was_editing = layer.qgis_layer.isEditable()
+        if not was_editing and not layer.qgis_layer.startEditing():
             return False
         deleted = layer.qgis_layer.deleteFeature(fid)
-        return deleted and layer.qgis_layer.commitChanges()
+        if deleted and (flush_buffer or not was_editing):
+            layer.qgis_layer.commitChanges()  # noqa: QGS202
+        return deleted
 
     @pyqtSlot(QObject, str, result=QObject)
     def createFeatureIteratorFromExpression(
