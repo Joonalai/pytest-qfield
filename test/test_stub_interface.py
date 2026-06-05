@@ -336,3 +336,19 @@ def test_create_feature_pins_feature_stub(
     assert QQmlEngine.objectOwnership(feature_stub) == (
         QQmlEngine.ObjectOwnership.CppOwnership
     )
+
+
+def test_delete_feature_removes_feature_via_stub_interface(
+    layer_points: "QgsVectorLayer",
+    qgs_project_stub: "QgsProjectStub",
+    qfield_layer_utils_stub: "QFieldLayerUtilsStub",
+):
+    assert qgs_project_stub.qgis_project.addMapLayer(layer_points)
+    [layer_stub] = qgs_project_stub.mapLayersByName("points")
+    fid = layer_points.allFeatureIds()[0]
+
+    deleted = qfield_layer_utils_stub.deleteFeature(qgs_project_stub, layer_stub, fid)
+
+    assert deleted is True
+    assert fid not in layer_points.allFeatureIds()
+    assert not layer_points.isEditable()
