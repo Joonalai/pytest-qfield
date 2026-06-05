@@ -83,6 +83,7 @@ def qfield_bot(  # noqa: PLR0913
     qfield_feature_utils_stub: QFieldFeatureUtilsStub,
     qfield_geometry_utils_stub: QFieldGeometryUtilsStub,
     qfield_theme_stub: QFieldThemeStub,
+    qfield_settings_stub: QSettingsStub,
     register_qfield_resources: None,  # noqa: ARG001
     register_qfield_types: None,  # noqa: ARG001
     register_qgis_types: None,  # noqa: ARG001
@@ -114,7 +115,7 @@ def qfield_bot(  # noqa: PLR0913
         "platformUtilities": qfield_platform_utilities_stub,
         "qgisProject": qgs_project_stub,
         "systemFontPointSize": system_font_point_size,
-        "settings": QSettingsStub(),
+        "settings": qfield_settings_stub,
         "Theme": qfield_theme_stub,
         "StringUtils": qfield_string_utils_stub,
         "LayerUtils": qfield_layer_utils_stub,
@@ -189,6 +190,18 @@ def qfield_platform_utilities_stub() -> QFieldPlatformUtilitiesStub:
     Override this fixture to use an extended version of the class if needed.
     """
     return QFieldPlatformUtilitiesStub()
+
+
+@pytest.fixture
+def qfield_settings_stub() -> QSettingsStub:
+    """
+    Stub implementation for QSettings (the QML `settings` global).
+
+    QField plugins use the shared `settings` store as a cross-plugin channel
+    (e.g. a project form button writes a token that the plugin polls for).
+    Override this fixture to use an extended version of the class if needed.
+    """
+    return QSettingsStub()
 
 
 @pytest.fixture

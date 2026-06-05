@@ -33,6 +33,7 @@ The following stub fixtures correspond to objects available in the QField QML co
 | `qfield_layer_utils_stub` | `LayerUtils` | Layer utility functions. |
 | `qfield_feature_utils_stub` | `FeatureUtils` | Feature utility functions. |
 | `qfield_geometry_utils_stub` | `GeometryUtils` | Geometry utility functions. |
+| `qfield_settings_stub` | `settings` | `QSettings` store, QML-callable via `value`, `setValue`, and `remove`. Plugins use it as a cross-plugin channel (e.g. a project form button writes a token the plugin polls for). |
 | `qfield_qml_extra_context_properties` | (various) | Dictionary of extra context properties to inject. |
 
 #### Named-Item Stubs
@@ -43,7 +44,7 @@ Some QField QML code locates objects through `iface.findItemByObjectName("...")`
 | --- | --- | --- |
 | `qfield_positioning_stub` | `positionSource` | QField `Positioning` item — `active` flag and `projectedPosition` (x, y). |
 | `qfield_geometry_highlighter_stub` | `geometryHighlighter` | `GeometryHighlighter` exposing `geometryWrapper`, `duration`, `visible`, and `update()`. |
-| `qfield_feature_list_form_stub` | `featureForm` | `FeatureListForm` — drive an existing feature's attribute form via `model.setFeatures(layer, filter)`, `selection.focusedItem`, `state` (`"Hidden"` / `"FeatureList"` / `"FeatureForm"` read-only view / `"FeatureFormEdit"` edit), and `visible` (true whenever a feature is shown). The QML id is `featureListForm` but plugins look it up by `objectName` `"featureForm"`. |
+| `qfield_feature_list_form_stub` | `featureForm` | `FeatureListForm` — drive an existing feature's attribute form via `model.setFeatures(layer, filter)`, `selection.focusedItem`, `state` (`"Hidden"` / `"FeatureList"` / `"FeatureForm"` read-only view / `"FeatureFormEdit"` edit), and `visible` (true whenever a feature is shown). `selection.focusedFeature` / `focusedLayer` resolve the focused occurrence from the last `setFeatures` call. The QML id is `featureListForm` but plugins look it up by `objectName` `"featureForm"`. |
 | `qfield_overlay_feature_form_drawer_stub` | `overlayFeatureFormDrawer` | `overlayFeatureFormDrawer` — the drawer that covers the map after digitizing a feature. Exposes `opened`. Distinct from `featureForm`. |
 
 For the form stub, tests typically drive the canonical pattern from QML and assert on the captured calls:
@@ -192,6 +193,7 @@ The `qfield_bot` fixture provides several methods to help testing:
 - Overriding stub fixtures: [`test/test_fixture_override.py`](test/test_fixture_override.py)
 - Overriding auto-registered named-item stubs: [`test/test_named_item_overrides.py`](test/test_named_item_overrides.py)
 - Driving the feature-form lifecycle: [`test/test_feature_form_lifecycle.py`](test/test_feature_form_lifecycle.py)
+- The `settings`-poll form-button → plugin action channel: [`test/test_form_action_channel.py`](test/test_form_action_channel.py)
 - Javascript function tests: [`test/test_javascript_functions.py`](test/test_javascript_functions.py)
 - Stub interface integration: [`test/test_stub_interface.py`](test/test_stub_interface.py)
 - Visual/manual checks: [`test/visual/test_plugin_visually.py`](test/visual/test_plugin_visually.py)
