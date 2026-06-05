@@ -481,17 +481,24 @@ class QFieldFeatureListFormStub(QObject):
         form.selection.focusedItem = 0;
         form.state = "FeatureFormEdit";
 
-    ``overlayFeatureFormDrawer`` is a separate (post-digitize) item — don't
-    confuse the two.
+    ``overlayFeatureFormDrawer`` is a separate (post-digitize) item — see
+    :class:`QFieldOverlayFeatureFormDrawerStub`; don't confuse the two.
+
+    ``visible`` mirrors ``props.isVisible`` (``visible: props.isVisible`` in
+    QField): it is ``true`` whenever a feature is shown, in either the
+    read-only ``"FeatureForm"`` view or the ``"FeatureFormEdit"`` edit state.
+    Plugins that hide overlays while a form covers the map watch it.
     """
 
     stateChanged = pyqtSignal()
+    visibleChanged = pyqtSignal()
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent=parent)
         self._model = QFieldMultiFeatureListModelStub(parent=self)
         self._selection = QFieldFeatureListModelSelectionStub(parent=self)
         self._state = ""
+        self._visible = False
 
     @pyqtProperty(QObject, constant=True)
     def model(self) -> QFieldMultiFeatureListModelStub:
@@ -511,6 +518,54 @@ class QFieldFeatureListFormStub(QObject):
             return
         self._state = str(value)
         self.stateChanged.emit()
+
+    @pyqtProperty(bool, notify=visibleChanged)
+    def visible(self) -> bool:
+        return self._visible
+
+    @visible.setter  # type: ignore[no-redef]
+    def visible(self, value: bool) -> None:
+        if self._visible == value:
+            return
+        self._visible = bool(value)
+        self.visibleChanged.emit()
+
+
+class QFieldOverlayFeatureFormDrawerStub(QObject):
+    """
+    Stub implementation for ``overlayFeatureFormDrawer``.
+
+    https://github.com/opengisch/QField/blob/master/src/qml/qgismobileapp.qml
+
+    The drawer that slides in over the map after digitizing a feature. Distinct
+    from ``featureForm`` (:class:`QFieldFeatureListFormStub`), which is the
+    identify/attribute panel. Plugins read ``opened`` to tell whether the
+    drawer currently covers the map (QField's own ``mapCanvas.isEnabled``
+    checks ``!overlayFeatureFormDrawer.opened`` the same way).
+
+    ``shown_features`` records the ``(layer, feature_id)`` pairs the drawer has
+    been opened for — the drawer has no QML ``model`` surface of its own, so
+    this Python-side log is how tests assert which feature was shown (mirroring
+    ``QFieldMultiFeatureListModelStub.set_features_calls``).
+    """
+
+    openedChanged = pyqtSignal()
+
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent=parent)
+        self._opened = False
+        self.shown_features: list[tuple[QObject, int]] = []
+
+    @pyqtProperty(bool, notify=openedChanged)
+    def opened(self) -> bool:
+        return self._opened
+
+    @opened.setter  # type: ignore[no-redef]
+    def opened(self, value: bool) -> None:
+        if self._opened == value:
+            return
+        self._opened = bool(value)
+        self.openedChanged.emit()
 
 
 class QFieldMapSettingsStub(QObject):

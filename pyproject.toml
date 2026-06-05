@@ -113,6 +113,7 @@ lint.external = ["QGS"]
     "ANN201", # missing-return-type-undocumented-public-function
     "PLR2004", # magic-value-comparison
     "N802", # Function name should be lowercase
+    "E501", # Line too long
 ]
 
 [tool.flake8]

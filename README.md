@@ -43,7 +43,8 @@ Some QField QML code locates objects through `iface.findItemByObjectName("...")`
 | --- | --- | --- |
 | `qfield_positioning_stub` | `positionSource` | QField `Positioning` item — `active` flag and `projectedPosition` (x, y). |
 | `qfield_geometry_highlighter_stub` | `geometryHighlighter` | `GeometryHighlighter` exposing `geometryWrapper`, `duration`, `visible`, and `update()`. |
-| `qfield_feature_list_form_stub` | `featureForm` | `FeatureListForm` — drive an existing feature's attribute form via `model.setFeatures(layer, filter)`, `selection.focusedItem`, and `state` (`"FeatureFormEdit"` / `"FeatureForm"`). The QML id is `featureListForm` but plugins look it up by `objectName` `"featureForm"`. |
+| `qfield_feature_list_form_stub` | `featureForm` | `FeatureListForm` — drive an existing feature's attribute form via `model.setFeatures(layer, filter)`, `selection.focusedItem`, `state` (`"Hidden"` / `"FeatureList"` / `"FeatureForm"` read-only view / `"FeatureFormEdit"` edit), and `visible` (true whenever a feature is shown). The QML id is `featureListForm` but plugins look it up by `objectName` `"featureForm"`. |
+| `qfield_overlay_feature_form_drawer_stub` | `overlayFeatureFormDrawer` | `overlayFeatureFormDrawer` — the drawer that covers the map after digitizing a feature. Exposes `opened`. Distinct from `featureForm`. |
 
 For the form stub, tests typically drive the canonical pattern from QML and assert on the captured calls:
 
@@ -180,6 +181,9 @@ The `qfield_bot` fixture provides several methods to help testing:
 - `click_item(item)`: Simulates a mouse click on a QML item.
 - `click_map_at(crs_point, click_type=0)`: Emits `clicked` on the QML map canvas stub for a tap at a project-CRS coordinate (inverts `mapToPixel` so the plugin's `screenToCoordinate` recovers the input).
 - `long_press_map_at(crs_point, click_type=0)`: Emits `confirmedClicked` (QField's long-press gesture) at a project-CRS coordinate.
+- `open_feature_form(layer, feature_id, mode="view")`: Drives the `featureForm` stub as QField does when a feature is opened — navigates the model to the feature, sets `state` to the read-only `"FeatureForm"` view (`mode="view"`) or `"FeatureFormEdit"` (`mode="edit"`), and makes the form `visible`. Notify signals fire so bound plugin QML reacts.
+- `open_overlay_form(layer, feature_id)`: Opens the `overlayFeatureFormDrawer` stub (`opened = True`) for a feature, as QField does after digitizing.
+- `close_forms()`: Hides `featureForm` (`visible = False`, `state = "Hidden"`) and closes `overlayFeatureFormDrawer` (`opened = False`).
 - `load_js_function(js_file, function_name, params)`: Loads a JavaScript function from a file for direct testing.
 
 ## Examples
@@ -187,6 +191,7 @@ The `qfield_bot` fixture provides several methods to help testing:
 - Basic plugin loading/clicking tests: [`test/test_plugin.py`](test/test_plugin.py)
 - Overriding stub fixtures: [`test/test_fixture_override.py`](test/test_fixture_override.py)
 - Overriding auto-registered named-item stubs: [`test/test_named_item_overrides.py`](test/test_named_item_overrides.py)
+- Driving the feature-form lifecycle: [`test/test_feature_form_lifecycle.py`](test/test_feature_form_lifecycle.py)
 - Javascript function tests: [`test/test_javascript_functions.py`](test/test_javascript_functions.py)
 - Stub interface integration: [`test/test_stub_interface.py`](test/test_stub_interface.py)
 - Visual/manual checks: [`test/visual/test_plugin_visually.py`](test/visual/test_plugin_visually.py)

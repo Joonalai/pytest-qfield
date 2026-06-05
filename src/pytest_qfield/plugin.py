@@ -39,6 +39,7 @@ from pytest_qfield.stub_interface.qfield_stubs import (
     QFieldGeometryUtilsStub,
     QFieldLayerUtilsStub,
     QFieldMapCanvasStub,
+    QFieldOverlayFeatureFormDrawerStub,
     QFieldPlatformUtilitiesStub,
     QFieldPositioningStub,
     QFieldStringUtilsStub,
@@ -295,6 +296,20 @@ def qfield_feature_list_form_stub() -> QFieldFeatureListFormStub:
 
 
 @pytest.fixture
+def qfield_overlay_feature_form_drawer_stub() -> QFieldOverlayFeatureFormDrawerStub:
+    """
+    Stub implementation for overlayFeatureFormDrawer (QML objectName
+    `overlayFeatureFormDrawer`).
+
+    The instance is auto-registered on the iface stub under the
+    `overlayFeatureFormDrawer` name so plugins can locate it via
+    `iface.findItemByObjectName`. Override this fixture to use an extended
+    version of the class if needed.
+    """
+    return QFieldOverlayFeatureFormDrawerStub()
+
+
+@pytest.fixture
 def qfield_map_canvas_stub(qgis_canvas: "QgsMapCanvas") -> QFieldMapCanvasStub:
     """
     Stub implementation for the QML MapCanvas item returned by
@@ -306,18 +321,19 @@ def qfield_map_canvas_stub(qgis_canvas: "QgsMapCanvas") -> QFieldMapCanvasStub:
 
 
 @pytest.fixture(autouse=True)
-def _attach_default_iface_stubs(
+def _attach_default_iface_stubs(  # noqa: PLR0913
     qfield_iface: QFieldAppInterfaceStub,
     qfield_positioning_stub: QFieldPositioningStub,
     qfield_geometry_highlighter_stub: QFieldGeometryHighlighterStub,
     qfield_feature_list_form_stub: QFieldFeatureListFormStub,
+    qfield_overlay_feature_form_drawer_stub: QFieldOverlayFeatureFormDrawerStub,
     qfield_map_canvas_stub: QFieldMapCanvasStub,
 ) -> None:
     """
     Auto-wire default stubs onto the iface before QML loads:
 
-    - ``positionSource``, ``geometryHighlighter`` and ``featureForm`` are
-      registered as named items reachable via
+    - ``positionSource``, ``geometryHighlighter``, ``featureForm`` and
+      ``overlayFeatureFormDrawer`` are registered as named items reachable via
       ``iface.findItemByObjectName``.
     - The map canvas stub is set as ``iface.qml_map_canvas`` and returned by
       ``iface.mapCanvas()``.
@@ -332,6 +348,9 @@ def _attach_default_iface_stubs(
         "geometryHighlighter", qfield_geometry_highlighter_stub
     )
     qfield_iface.register_named_item("featureForm", qfield_feature_list_form_stub)
+    qfield_iface.register_named_item(
+        "overlayFeatureFormDrawer", qfield_overlay_feature_form_drawer_stub
+    )
     qfield_iface.qml_map_canvas = qfield_map_canvas_stub
 
 
