@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.8.0 (2026-06-05)
+
+### Features
+
+- Honor open edit session in LayerUtils.deleteFeature stub
+  ([`7693025`](https://github.com/Joonalai/pytest-qfield/commit/7693025f2b0f922ed438436624d762f43eb3d5f1))
+
+
 ## v0.7.0 (2026-06-05)
 
 ### Features
