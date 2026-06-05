@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v0.7.0 (2026-06-05)
+
+### Features
+
+- Add feature-form lifecycle stubs and QFieldBot helpers
+  ([`ae2bbea`](https://github.com/Joonalai/pytest-qfield/commit/ae2bbeab8fc5fb4510ca576ef166cc4ce1f38e05))
+
+- Add LayerUtils.deleteFeature stub slot
+  ([`b951706`](https://github.com/Joonalai/pytest-qfield/commit/b951706a6ac484d50aa891a95e6b960c32945280))
+
+- Add settings and focused-occurrence stub surface
+  ([`b2c89b2`](https://github.com/Joonalai/pytest-qfield/commit/b2c89b2c83639d57de67fc6d9d1f8854b8d0d7a1))
+
+- Forward edit signals on QgsVectorLayerStub
+  ([`a57a28c`](https://github.com/Joonalai/pytest-qfield/commit/a57a28c263cb9ef5aea7c55b0596372cf1f327c4))
+
+
 ## v0.6.1 (2026-05-26)
 
 ### Bug Fixes
