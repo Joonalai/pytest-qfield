@@ -24,7 +24,7 @@ and properties that return fresh ``QObject`` subclasses to QML.
 """
 
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from PyQt6.QtCore import QObject, QPointF, QSizeF, pyqtProperty, pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QColor, QFont
@@ -464,13 +464,28 @@ class QFieldFeatureListModelSelectionStub(QObject):
 
     Exposes ``focusedItem`` as a settable index — plugins set it to ``0``
     after a single-row ``model.setFeatures`` to focus the matched feature.
+
+    ``focusedFeature`` / ``focusedLayer`` resolve the feature and layer that
+    ``focusedItem`` points at, reading from the model's most recent
+    ``setFeatures(layer, filter)`` call: the layer is that call's layer, and the
+    feature is the ``focusedItem``-th match of its filter expression. This is
+    the exact flow a plugin uses to open a form
+    (``model.setFeatures(layer, "id = '...'")`` + ``focusedItem = 0``), then
+    reads ``selection.focusedFeature`` / ``focusedLayer`` from the handler. Both
+    return ``None`` until a feature is focused.
     """
 
     focusedItemChanged = pyqtSignal()
 
-    def __init__(self, parent: QObject | None = None) -> None:
+    def __init__(
+        self,
+        model: "QFieldMultiFeatureListModelStub",
+        parent: QObject | None = None,
+    ) -> None:
         super().__init__(parent=parent)
+        self._model = model
         self._focused_item = -1
+        self._pinned_feature_stubs: list[QgsFeatureStub] = []
 
     @pyqtProperty(int, notify=focusedItemChanged)
     def focusedItem(self) -> int:
@@ -482,6 +497,32 @@ class QFieldFeatureListModelSelectionStub(QObject):
             return
         self._focused_item = int(value)
         self.focusedItemChanged.emit()
+
+    @pyqtProperty(QObject)
+    def focusedLayer(self) -> QgsVectorLayerStub | None:
+        call = self._focused_setfeatures_call()
+        return cast("QgsVectorLayerStub", call[0]) if call else None
+
+    @pyqtProperty(QObject)
+    def focusedFeature(self) -> QgsFeatureStub | None:
+        call = self._focused_setfeatures_call()
+        if call is None:
+            return None
+        layer = cast("QgsVectorLayerStub", call[0])
+        request = QgsFeatureRequest().setFilterExpression(call[1])
+        features = list(layer.qgis_layer.getFeatures(request))
+        if self._focused_item >= len(features):
+            return None
+        stub = QgsFeatureStub(features[self._focused_item])
+        stub.setParent(self)
+        QQmlEngine.setObjectOwnership(stub, QQmlEngine.ObjectOwnership.CppOwnership)
+        self._pinned_feature_stubs.append(stub)
+        return stub
+
+    def _focused_setfeatures_call(self) -> tuple[QObject, str] | None:
+        if self._focused_item < 0 or not self._model.set_features_calls:
+            return None
+        return self._model.set_features_calls[-1]
 
 
 class QFieldFeatureListFormStub(QObject):
@@ -514,7 +555,7 @@ class QFieldFeatureListFormStub(QObject):
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent=parent)
         self._model = QFieldMultiFeatureListModelStub(parent=self)
-        self._selection = QFieldFeatureListModelSelectionStub(parent=self)
+        self._selection = QFieldFeatureListModelSelectionStub(self._model, parent=self)
         self._state = ""
         self._visible = False
 
