@@ -77,11 +77,17 @@ class QgsVectorLayerStub(QgsMapLayerStub):
     """
 
     featureAdded = pyqtSignal(int)
+    featureDeleted = pyqtSignal(int)
+    geometryChanged = pyqtSignal(int, object)
+    afterCommitChanges = pyqtSignal()
 
     def __init__(self, qgis_layer: "QgsVectorLayer") -> None:
         super().__init__(qgis_layer)
         self.qgis_layer: QgsVectorLayer = cast("QgsVectorLayer", self.qgis_layer)
         self.qgis_layer.featureAdded.connect(self.featureAdded.emit)
+        self.qgis_layer.featureDeleted.connect(self.featureDeleted.emit)
+        self.qgis_layer.geometryChanged.connect(self.geometryChanged.emit)
+        self.qgis_layer.afterCommitChanges.connect(self.afterCommitChanges.emit)
         self._pinned_feature_stubs: list[QgsFeatureStub] = []
 
     @pyqtSlot(result=bool)
