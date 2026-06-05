@@ -26,12 +26,24 @@ from PyQt6.QtQml import QQmlComponent
 from PyQt6.QtQuick import QQuickItem
 from qgis.core import QgsPointXY, QgsProject
 
+from pytest_qfield.stub_interface.qgis_stubs import QgsVectorLayerStub
+
 if TYPE_CHECKING:
     from PyQt6.QtQml import QQmlApplicationEngine
     from pytestqt.logging import _QtMessageCapture
     from pytestqt.qtbot import QtBot
+    from qgis.core import QgsVectorLayer
 
-    from pytest_qfield.stub_interface.qfield_stubs import QFieldAppInterfaceStub
+    from pytest_qfield.stub_interface.qfield_stubs import (
+        QFieldAppInterfaceStub,
+        QFieldFeatureListFormStub,
+        QFieldOverlayFeatureFormDrawerStub,
+    )
+
+_FEATURE_FORM_STATE_BY_MODE = {
+    "view": "FeatureForm",
+    "edit": "FeatureFormEdit",
+}
 
 QML_JS_QOBJECT_TEMPLATE = """
 import QtQml
@@ -231,6 +243,72 @@ class QFieldBot:
             self.iface.qgis_map_canvas.mapSettings().mapToPixel().transform(crs_point)
         )
         return QPointF(pixel.x(), pixel.y())
+
+    def open_feature_form(
+        self,
+        layer: "QgsVectorLayer",
+        feature_id: int,
+        mode: str = "view",
+    ) -> None:
+        """
+        Drive the ``featureForm`` stub as QField does when a feature is opened.
+
+        Navigates the form's model to ``feature_id`` on ``layer``, focuses the
+        matched row, switches ``state`` to the read-only ``"FeatureForm"`` view
+        (``mode="view"``) or the ``"FeatureFormEdit"`` edit state
+        (``mode="edit"``) and makes the form ``visible``. Each property change
+        emits its notify signal, so plugin QML bound to ``featureForm.visible``
+        or ``featureForm.state`` reacts.
+        """
+        try:
+            state = _FEATURE_FORM_STATE_BY_MODE[mode]
+        except KeyError:
+            raise ValueError(
+                f"Unknown feature form mode {mode!r}; expected one of "
+                f"{sorted(_FEATURE_FORM_STATE_BY_MODE)}"
+            ) from None
+        form = self._feature_form_stub()
+        form.model.setFeatures(QgsVectorLayerStub(layer), f"$id = {feature_id}")
+        form.selection.focusedItem = 0  # type: ignore[method-assign]
+        form.state = state  # type: ignore[method-assign]
+        form.visible = True  # type: ignore[method-assign]
+
+    def open_overlay_form(self, layer: "QgsVectorLayer", feature_id: int) -> None:
+        """
+        Open the ``overlayFeatureFormDrawer`` stub for ``feature_id`` on
+        ``layer``, as QField does after digitizing a feature. Sets ``opened``
+        to ``True`` and records the shown feature in ``shown_features`` so tests
+        can assert which feature was opened; the ``openedChanged`` notify signal
+        fires so bound plugin QML reacts.
+        """
+        drawer = self._overlay_form_stub()
+        drawer.shown_features.append((QgsVectorLayerStub(layer), feature_id))
+        drawer.opened = True  # type: ignore[method-assign]
+
+    def close_forms(self) -> None:
+        """
+        Dismiss both feature-form surfaces: hide ``featureForm``
+        (``visible = False``, ``state = "Hidden"``) and close
+        ``overlayFeatureFormDrawer`` (``opened = False``).
+        """
+        form = self._feature_form_stub()
+        form.visible = False  # type: ignore[method-assign]
+        form.state = "Hidden"  # type: ignore[method-assign]
+        self._overlay_form_stub().opened = False  # type: ignore[method-assign]
+
+    def _feature_form_stub(self) -> "QFieldFeatureListFormStub":
+        form = self.iface.findItemByObjectName("featureForm")
+        if form is None:
+            raise RuntimeError("featureForm stub is not registered on the iface")
+        return cast("QFieldFeatureListFormStub", form)
+
+    def _overlay_form_stub(self) -> "QFieldOverlayFeatureFormDrawerStub":
+        drawer = self.iface.findItemByObjectName("overlayFeatureFormDrawer")
+        if drawer is None:
+            raise RuntimeError(
+                "overlayFeatureFormDrawer stub is not registered on the iface"
+            )
+        return cast("QFieldOverlayFeatureFormDrawerStub", drawer)
 
     def load_qml(self, qml_file: Path, raise_if_warnings: bool = True) -> QObject:
         """
