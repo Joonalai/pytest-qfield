@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.9.0 (2026-06-12)
+
+### Features
+
+- Add readProject*Entry slots to AppInterface stub
+  ([`6f92e7d`](https://github.com/Joonalai/pytest-qfield/commit/6f92e7d26c02a4db350c92226f66f0a97dcd7769))
+
+
 ## v0.8.0 (2026-06-05)
 
 ### Features
