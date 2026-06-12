@@ -133,6 +133,28 @@ def test_geometry_highlighter_is_auto_registered_and_mutable_from_qml(
 
 
 @pytest.mark.usefixtures("load_stub_plugin")
+def test_project_entries_are_readable_through_iface(
+    qfield_bot: "QFieldBot", qgs_project_stub: "QgsProjectStub"
+):
+    project = qgs_project_stub.qgis_project
+    assert project.writeEntry("test", "stringKey", "stored")
+    assert project.writeEntry("test", "numKey", 42)
+    assert project.writeEntryDouble("test", "doubleKey", 2.5)
+    assert project.writeEntryBool("test", "boolKey", True)
+    qfield_bot.click_item(qfield_bot.get_item("test_project_entries"))
+    assert qfield_bot.iface.logged_messages == [
+        "entry: stored",
+        "num: 42",
+        "double: 2.5",
+        "bool: true",
+        "missing entry: fallback",
+        "missing num: -1",
+        "missing double: -1.5",
+        "missing bool: true",
+    ]
+
+
+@pytest.mark.usefixtures("load_stub_plugin")
 def test_unknown_object_name_resolves_to_null(qfield_bot: "QFieldBot"):
     qfield_bot.click_item(qfield_bot.get_item("test_unknown_named_item"))
     assert qfield_bot.iface.logged_messages == ["unknown is null: true"]

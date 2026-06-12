@@ -30,7 +30,7 @@ from PyQt6.QtCore import QObject, QPointF, QSizeF, pyqtProperty, pyqtSignal, pyq
 from PyQt6.QtGui import QColor, QFont
 from PyQt6.QtQml import QQmlEngine
 from PyQt6.QtQuick import QQuickItem
-from qgis.core import QgsFeatureRequest, QgsGeometry, QgsVectorLayerUtils
+from qgis.core import QgsFeatureRequest, QgsGeometry, QgsProject, QgsVectorLayerUtils
 
 from pytest_qfield.stub_interface.qgis_stubs import (
     QgsFeatureStub,
@@ -161,6 +161,31 @@ class QFieldAppInterfaceStub(QObject):
     def logMessage(self, *messages: str) -> None:
         self.logged_messages.extend(messages)
 
+    # The readProject*Entry slots mirror AppInterface's QgsProject entry
+    # readers, dropping the (value, ok) tuple QML cannot take. QField's C++
+    # defaults the third argument, but plugin QML passes all three, so a
+    # single full-signature slot per reader is enough.
+
+    @pyqtSlot(str, str, str, result=str)
+    def readProjectEntry(self, scope: str, key: str, default: str) -> str:
+        value, _ = QgsProject.instance().readEntry(scope, key, default)
+        return value
+
+    @pyqtSlot(str, str, int, result=int)
+    def readProjectNumEntry(self, scope: str, key: str, default: int) -> int:
+        value, _ = QgsProject.instance().readNumEntry(scope, key, default)
+        return value
+
+    @pyqtSlot(str, str, float, result=float)
+    def readProjectDoubleEntry(self, scope: str, key: str, default: float) -> float:
+        value, _ = QgsProject.instance().readDoubleEntry(scope, key, default)
+        return value
+
+    @pyqtSlot(str, str, bool, result=bool)
+    def readProjectBoolEntry(self, scope: str, key: str, default: bool) -> bool:
+        value, _ = QgsProject.instance().readBoolEntry(scope, key, default)
+        return value
+
 
 class QFieldPlatformUtilitiesStub(QObject):
     @pyqtSlot(result=bool)
@@ -239,7 +264,9 @@ class QFieldLayerUtilsStub(QObject):
             return False
         deleted = layer.qgis_layer.deleteFeature(fid)
         if deleted and (flush_buffer or not was_editing):
-            layer.qgis_layer.commitChanges()  # noqa: QGS202
+            # QGS201 misfires once QgsProject is imported in this module — the
+            # checker matches the bare method name, but this is a layer commit.
+            layer.qgis_layer.commitChanges()  # noqa: QGS201, QGS202
         return deleted
 
     @pyqtSlot(QObject, str, result=QObject)

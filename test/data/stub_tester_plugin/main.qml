@@ -33,6 +33,7 @@ Item {
         iface.addItemToPluginsToolbar(button3);
         iface.addItemToPluginsToolbar(button4);
         iface.addItemToPluginsToolbar(button5);
+        iface.addItemToPluginsToolbar(button6);
 
         function setup() {
             pointLayer = qgisProject.mapLayersByName(layerName)[0];
@@ -148,6 +149,26 @@ Item {
             iface.logMessage(`highlighter geometry: ${highlighter.geometryWrapper.qgsGeometry.asWkt(0)}`);
             highlighter.geometryWrapper.clear();
             iface.logMessage(`highlighter geometry after clear: ${highlighter.geometryWrapper.qgsGeometry}`);
+        }
+    }
+
+    QfToolButton {
+        id: button6
+        objectName: "test_project_entries"
+
+        bgcolor: Theme.darkGray
+        iconSource: "icon.svg"
+        iconColor: Theme.mainColor
+        round: true
+        onClicked: {
+            iface.logMessage(`entry: ${iface.readProjectEntry("test", "stringKey", "fallback")}`);
+            iface.logMessage(`num: ${iface.readProjectNumEntry("test", "numKey", -1)}`);
+            iface.logMessage(`double: ${iface.readProjectDoubleEntry("test", "doubleKey", -1.5)}`);
+            iface.logMessage(`bool: ${iface.readProjectBoolEntry("test", "boolKey", false)}`);
+            iface.logMessage(`missing entry: ${iface.readProjectEntry("test", "missingKey", "fallback")}`);
+            iface.logMessage(`missing num: ${iface.readProjectNumEntry("test", "missingKey", -1)}`);
+            iface.logMessage(`missing double: ${iface.readProjectDoubleEntry("test", "missingKey", -1.5)}`);
+            iface.logMessage(`missing bool: ${iface.readProjectBoolEntry("test", "missingKey", true)}`);
         }
     }
 
