@@ -440,8 +440,6 @@ def _get_qfied_import_path(request: "SubRequest") -> Path:
     if not qfield_import_path.exists():
         raise ValueError(f"{qfield_import_path} does not exist!")
 
-    if not (qfield_import_path / "Theme").exists():
-        raise ValueError(f"{qfield_import_path / 'Theme'} does not exist!")
     return qfield_import_path
 
 
