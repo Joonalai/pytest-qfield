@@ -24,6 +24,7 @@ jobs:
         qgis-image-tags:
           - stable-trixie
         qfield-refs:
+          - v4.2.9
           - release-4_3
           - master
       fail-fast: false
