@@ -21,7 +21,11 @@ jobs:
       image: qgis/qgis:${{ matrix.qgis-image-tags }}
     strategy:
       matrix:
-        qgis-image-tags: ["4.0-questing"]
+        qgis-image-tags:
+          - stable-trixie
+        qfield-refs:
+          - release-4_3
+          - master
       fail-fast: false
 
     steps:
@@ -31,7 +35,7 @@ jobs:
         with:
           repository: opengisch/QField
           path: QField
-          ref: v4.1.4
+          ref: ${{ matrix.qfield-refs }}
 
       - name: Install venv
         run: |
