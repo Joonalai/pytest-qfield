@@ -22,7 +22,8 @@ jobs:
     strategy:
       matrix:
         qgis-image-tags:
-          - stable-trixie
+          - 4.2-questing
+          - latest
         qfield-refs:
           - v4.2.9
           - release-4_3
