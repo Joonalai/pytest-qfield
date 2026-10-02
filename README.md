@@ -33,7 +33,7 @@ The following stub fixtures correspond to objects available in the QField QML co
 | `qfield_layer_utils_stub` | `LayerUtils` | Layer utility functions. |
 | `qfield_feature_utils_stub` | `FeatureUtils` | Feature utility functions. |
 | `qfield_geometry_utils_stub` | `GeometryUtils` | Geometry utility functions. |
-| `qfield_settings_stub` | `settings` | `QSettings` store, QML-callable via `value`, `setValue`, and `remove`. Plugins use it as a cross-plugin channel (e.g. a project form button writes a token the plugin polls for). |
+| `qfield_settings_stub` | `settings` | `QSettings` store backed by a per-test ini file, QML-callable via `value`, `valueBool`, `setValue`, and `remove`. Plugins use it as a cross-plugin channel (e.g. a project form button writes a token the plugin polls for). |
 | `qfield_qml_extra_context_properties` | (various) | Dictionary of extra context properties to inject. |
 
 #### Named-Item Stubs

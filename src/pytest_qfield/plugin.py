@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
-from PyQt6.QtCore import QObject, Qt, QUrl
+from PyQt6.QtCore import QObject, QSettings, Qt, QUrl
 from PyQt6.QtQml import (
     QQmlApplicationEngine,
     qmlRegisterType,
@@ -193,15 +193,17 @@ def qfield_platform_utilities_stub() -> QFieldPlatformUtilitiesStub:
 
 
 @pytest.fixture
-def qfield_settings_stub() -> QSettingsStub:
+def qfield_settings_stub(tmp_path: Path) -> QSettingsStub:
     """
     Stub implementation for QSettings (the QML `settings` global).
 
     QField plugins use the shared `settings` store as a cross-plugin channel
     (e.g. a project form button writes a token that the plugin polls for).
+    Backed by a per-test ini file so persisted UI state (e.g. drawer collapse)
+    doesn't leak between tests or into the developer's real settings.
     Override this fixture to use an extended version of the class if needed.
     """
-    return QSettingsStub()
+    return QSettingsStub(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat)
 
 
 @pytest.fixture

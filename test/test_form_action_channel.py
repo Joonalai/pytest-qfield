@@ -25,9 +25,6 @@ then reads the focused occurrence from ``featureForm.selection``.
 
 from typing import TYPE_CHECKING
 
-import pytest
-from PyQt6.QtCore import QSettings
-
 from pytest_qfield.stub_interface.qgis_stubs import QSettingsStub
 
 if TYPE_CHECKING:
@@ -37,12 +34,6 @@ if TYPE_CHECKING:
 
     from pytest_qfield.qfieldbot import QFieldBot
     from pytest_qfield.stub_interface.qgis_stubs import QgsProjectStub
-
-
-@pytest.fixture
-def qfield_settings_stub(tmp_path: "Path") -> QSettingsStub:
-    """Isolate settings per test in a temp ini file instead of the shared store."""
-    return QSettingsStub(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat)
 
 
 def test_settings_set_value_and_remove_round_trip_from_qml(
@@ -69,6 +60,35 @@ Item {
         "after set: redrawSamplePlots",
         "after remove: ",
     ]
+
+
+def test_settings_value_bool_from_qml(
+    qfield_bot: "QFieldBot",
+    tmp_path: "Path",
+    qfield_settings_stub: QSettingsStub,
+):
+    qfield_settings_stub.setValue("myplugin/collapsed", True)  # noqa: QGS202
+    probe_qml = tmp_path / "settings_bool_probe.qml"
+    probe_qml.write_text("""
+import QtQuick
+
+Item {
+    function run() {
+        iface.logMessage("stored: " + settings.valueBool("myplugin/collapsed", false));
+        iface.logMessage("default: " + settings.valueBool("myplugin/missing", true));
+    }
+}
+""")
+    root = qfield_bot.load_qml(probe_qml)
+    root.run()
+
+    assert qfield_bot.iface.logged_messages == ["stored: true", "default: true"]
+
+
+def test_settings_stub_does_not_leak_between_tests(
+    qfield_settings_stub: QSettingsStub,
+):
+    assert qfield_settings_stub.value("myplugin/collapsed") is None
 
 
 def test_focused_feature_and_layer_resolve_from_setfeatures(
