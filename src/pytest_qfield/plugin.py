@@ -27,7 +27,7 @@ from PyQt6.QtQml import (
     qmlRegisterType,
 )
 from PyQt6.QtQuickWidgets import QQuickWidget
-from PyQt6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QGridLayout, QWidget
 from qgis.core import QgsProject
 
 from pytest_qfield.qfieldbot import QFieldBot
@@ -452,26 +452,20 @@ def _embed_qml_window_in_qgis_main_window(
     qgis_canvas: "QgsMapCanvas",
     qml_overlay_widget: QQuickWidget,
 ) -> None:
-    # Keep QML as a toolbar strip and show QGIS canvas below it.
-    # Overlay transparency is not reliable across all Qt backends.
+    # Stack the QML window over the canvas in the same grid cell, as QField
+    # draws its UI over the map. Sharing geometry keeps QML scene coordinates
+    # equal to canvas pixels, so screenToCoordinate() of a tap is correct.
     central_widget = QWidget(parent=qgis_parent)
-    central_layout = QVBoxLayout(central_widget)
+    central_layout = QGridLayout(central_widget)
     central_layout.setContentsMargins(0, 0, 0, 0)
-    central_layout.setSpacing(0)
+
+    qgis_canvas.setParent(central_widget)
+    central_layout.addWidget(qgis_canvas, 0, 0)
 
     qml_overlay_widget.setParent(central_widget)
     qml_overlay_widget.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-    qml_overlay_widget.setSizePolicy(
-        QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
-    )
-    qml_overlay_widget.setFixedHeight(56)
-    central_layout.addWidget(qml_overlay_widget, 0)
-
-    qgis_canvas.setParent(central_widget)
-    qgis_canvas.setSizePolicy(
-        QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
-    )
-    central_layout.addWidget(qgis_canvas, 1)
+    central_layout.addWidget(qml_overlay_widget, 0, 0)
+    qml_overlay_widget.raise_()
 
     qgis_parent.setCentralWidget(central_widget)
 
@@ -489,6 +483,7 @@ def _load_qml_overlay_widget(
     qml_overlay_widget.setAutoFillBackground(False)
     qml_overlay_widget.setClearColor(Qt.GlobalColor.transparent)
     qml_overlay_widget.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+    qml_overlay_widget.setAttribute(Qt.WidgetAttribute.WA_AlwaysStackOnTop, True)
     qml_overlay_widget.setStyleSheet("background: transparent;")
     qml_overlay_widget.setSource(QUrl.fromLocalFile(str(main_window_qml_path)))
 

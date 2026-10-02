@@ -179,13 +179,17 @@ The `qfield_bot` fixture provides several methods to help testing:
 - `open_project(qfield_project_file)`: Opens a QField project file.
 - `show_window()`: Shows the QField main window.
 - `get_item(object_name)`: Finds a QML item by its `objectName`.
-- `click_item(item)`: Simulates a mouse click on a QML item.
+- `click_item(item)`: Simulates a mouse click at the center of a QML item. Raises if that point is outside the QML window, where Qt would silently drop the click.
 - `click_map_at(crs_point, click_type=0)`: Emits `clicked` on the QML map canvas stub for a tap at a project-CRS coordinate (inverts `mapToPixel` so the plugin's `screenToCoordinate` recovers the input).
 - `long_press_map_at(crs_point, click_type=0)`: Emits `confirmedClicked` (QField's long-press gesture) at a project-CRS coordinate.
 - `open_feature_form(layer, feature_id, mode="view")`: Drives the `featureForm` stub as QField does when a feature is opened — navigates the model to the feature, sets `state` to the read-only `"FeatureForm"` view (`mode="view"`) or `"FeatureFormEdit"` (`mode="edit"`), and makes the form `visible`. Notify signals fire so bound plugin QML reacts.
 - `open_overlay_form(layer, feature_id)`: Opens the `overlayFeatureFormDrawer` stub (`opened = True`) for a feature, as QField does after digitizing.
 - `close_forms()`: Hides `featureForm` (`visible = False`, `state = "Hidden"`) and closes `overlayFeatureFormDrawer` (`opened = False`).
 - `load_js_function(js_file, function_name, params)`: Loads a JavaScript function from a file for direct testing.
+
+### Window layout
+
+The QML window is stacked over `qgis_canvas` with the same geometry, as QField draws its UI over the map. QML scene coordinates therefore equal canvas pixels, so a tap on a full-map overlay passes the right point to `mapCanvas.mapSettings.screenToCoordinate()`. The plugin root fills the window, and `iface.mainWindow().contentItem` is a window-sized item that overlays can use as `parent`, as in QField. The plugins toolbar is drawn over the top of the map.
 
 ## Examples
 

@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, cast
 
 from PyQt6.QtCore import QObject, QPointF, QSizeF, pyqtProperty, pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QColor, QFont
-from PyQt6.QtQml import QQmlEngine
+from PyQt6.QtQml import QQmlEngine, QQmlProperty
 from PyQt6.QtQuick import QQuickItem
 from qgis.core import QgsFeatureRequest, QgsGeometry, QgsProject, QgsVectorLayerUtils
 
@@ -100,7 +100,10 @@ class QFieldAppInterfaceStub(QObject):
             raise TypeError(f"Host is not a QQuickItem: {type(scene_root)}")
 
         root.setParentItem(scene_root)
-        root.setSize(scene_root.size())
+        # Track later resizes (e.g. when the window is shown), not just the
+        # host size at load time.
+        if not QQmlProperty.write(root, "anchors.fill", scene_root):
+            raise RuntimeError("Could not anchor plugin root to host item")
 
     @pyqtSlot(result=QObject)
     def mainWindow(self) -> QObject:
