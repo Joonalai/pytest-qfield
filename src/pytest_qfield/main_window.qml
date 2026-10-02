@@ -7,6 +7,8 @@ Item {
     property var toastMessages: []
     property string currentToastMessage: ""
     property int nextToastIndex: 0
+    // QField overlays parent to mainWindow.contentItem, which covers the map.
+    property alias contentItem: contentArea
 
     function displayToast(message) {
         toastMessages.push(message);
@@ -33,6 +35,13 @@ Item {
     width: 640
     height: 480
 
+    Item {
+        id: host
+
+        objectName: "host"
+        anchors.fill: parent
+    }
+
     Rectangle {
         id: toolbar
 
@@ -55,13 +64,10 @@ Item {
     }
 
     Item {
-        id: host
+        id: contentArea
 
-        objectName: "host"
-        anchors.top: toolbar.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
+        objectName: "contentItem"
+        anchors.fill: parent
     }
 
     Rectangle {

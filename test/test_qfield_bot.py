@@ -95,3 +95,82 @@ def test_long_press_map_at_round_trips_through_screen_to_coordinate(
     assert float(messages[1].removeprefix("confirmed y: ")) == pytest.approx(
         150.0, abs=2.0
     )
+
+
+@pytest.mark.parametrize(
+    "blocker_parent",
+    ["plugin", "iface.mainWindow().contentItem"],
+    ids=["plugin", "content"],
+)
+def test_click_item_taps_full_map_overlay_at_canvas_coordinate(
+    qfield_bot: "QFieldBot",
+    qgis_canvas: "QgsMapCanvas",
+    tmp_path: "Path",
+    blocker_parent: str,
+):
+    plugin_qml = tmp_path / "overlay_plugin.qml"
+    plugin_qml.write_text(f"""
+import QtQuick
+
+Item {{
+    id: plugin
+
+    Item {{
+        objectName: "mapClickBlocker"
+        parent: {blocker_parent}
+        anchors.fill: parent
+
+        TapHandler {{
+            onTapped: (eventPoint) => {{
+                const point = iface.mapCanvas().mapSettings.screenToCoordinate(
+                    eventPoint.position
+                );
+                iface.logMessage(point.x + "," + point.y);
+            }}
+        }}
+    }}
+}}
+""")
+    qfield_bot.show_window()
+    qgis_canvas.setExtent(QgsRectangle(0.0, 0.0, 200.0, 200.0))
+    qfield_bot.load_plugin(plugin_qml, emit_load_project_ended=False)
+    blocker = qfield_bot.get_item("mapClickBlocker")
+
+    qfield_bot.click_item(blocker)
+
+    window = blocker.window()
+    assert (window.width(), window.height()) == (
+        qgis_canvas.width(),
+        qgis_canvas.height(),
+    )
+    expected = qgis_canvas.getCoordinateTransform().toMapCoordinates(
+        window.width() // 2, window.height() // 2
+    )
+    [message] = qfield_bot.iface.logged_messages
+    x, y = (float(value) for value in message.split(","))
+    assert x == pytest.approx(expected.x(), abs=1.0)
+    assert y == pytest.approx(expected.y(), abs=1.0)
+
+
+def test_click_item_raises_when_item_is_outside_window(
+    qfield_bot: "QFieldBot",
+    tmp_path: "Path",
+):
+    plugin_qml = tmp_path / "offscreen_plugin.qml"
+    plugin_qml.write_text("""
+import QtQuick
+
+Item {
+    Item {
+        objectName: "farAway"
+        x: 100000
+        y: 100000
+        width: 10
+        height: 10
+    }
+}
+""")
+    qfield_bot.load_plugin(plugin_qml, emit_load_project_ended=False)
+
+    with pytest.raises(RuntimeError, match="outside"):
+        qfield_bot.click_item(qfield_bot.get_item("farAway"))

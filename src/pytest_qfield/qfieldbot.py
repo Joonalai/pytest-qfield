@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
 import pytest_qgis.utils
-from PyQt6.QtCore import QObject, QPointF, Qt, QtMsgType, QUrl
+from PyQt6.QtCore import QObject, QPointF, QRectF, Qt, QtMsgType, QUrl
 from PyQt6.QtQml import QQmlComponent
 from PyQt6.QtQuick import QQuickItem
 from qgis.core import QgsPointXY, QgsProject
@@ -205,9 +205,16 @@ class QFieldBot:
         mouse_button: Qt.MouseButton = Qt.MouseButton.LeftButton,
     ) -> None:
         center = QPointF(item.width(), item.height()) / 2
-        self.qtbot.mouseClick(
-            item.window(), mouse_button, pos=item.mapToScene(center).toPoint()
-        )
+        window = item.window()
+        scene_pos = item.mapToScene(center)
+        # Pointer handlers drop event points outside the window, so a click
+        # there would silently hit nothing.
+        if not QRectF(0, 0, window.width(), window.height()).contains(scene_pos):
+            raise RuntimeError(
+                f"Center of {item.objectName() or item} at {scene_pos} is outside "
+                f"the {window.width()}x{window.height()} QML window"
+            )
+        self.qtbot.mouseClick(window, mouse_button, pos=scene_pos.toPoint())
 
     def click_map_at(self, crs_point: QgsPointXY, click_type: int = 0) -> None:
         """
