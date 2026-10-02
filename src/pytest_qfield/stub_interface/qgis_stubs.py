@@ -148,6 +148,10 @@ class QSettingsStub(QSettings):
     def value(self, key: str, default_value: Any = None) -> "QVariant":  # noqa: ANN401
         return super().value(key, default_value)
 
+    @pyqtSlot(str, bool, result=bool)
+    def valueBool(self, key: str, default_value: bool) -> bool:
+        return bool(super().value(key, default_value, type=bool))
+
     @pyqtSlot(str, "QVariant")
     def setValue(self, key: str, value: Any) -> None:  # noqa: ANN401
         # QGS202 misfires here: it matches the method name and assumes the
