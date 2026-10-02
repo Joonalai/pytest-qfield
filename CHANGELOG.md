@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.10.0 (2026-10-02)
+
+### Features
+
+- Add valueBool to QSettingsStub and isolate settings per test
+  ([`0ae38b9`](https://github.com/Joonalai/pytest-qfield/commit/0ae38b9fe00a9dbba04c1e813c08d6d342b2cf59))
+
+- Overlay QML window on the canvas so full-map items are clickable
+  ([`2609aa4`](https://github.com/Joonalai/pytest-qfield/commit/2609aa4f85a9975bd6ad53f4dcc6c66b02da2117))
+
+
 ## v0.9.0 (2026-06-12)
 
 ### Features
