@@ -43,6 +43,10 @@ jobs:
           python3 -m venv --system-site-packages .venv
           .venv/bin/pip3 install -q -U uv
           .venv/bin/uv sync
+          # The system PyQt6 lacks QML bindings and the PyQt6 wheel must bundle
+          # the same Qt minor version as the system, as QGIS uses its private API
+          QT_MINOR=$(python3 -c "from PyQt6.QtCore import QT_VERSION_STR; print(QT_VERSION_STR.rsplit('.', 1)[0])")
+          .venv/bin/uv pip install --python .venv/bin/python "PyQt6==${QT_MINOR}.*"
 
       - name: Run tests
         env:

@@ -214,6 +214,9 @@ pip install pytest-qfield
 # uv add --dev pytest-qfield
 ```
 
+If your QGIS PyQt6 lacks QML bindings (e.g. Debian, Ubuntu), the import error shows
+the command to install a matching PyQt6 wheel.
+
 ### Configure QField imports path
 
 The plugin needs access to QField source code for its QML imports (typically `QField/src/qml/imports`).

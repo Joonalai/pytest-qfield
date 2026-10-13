@@ -15,3 +15,16 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
+
+try:
+    from PyQt6 import QtQml, QtQuick  # noqa: F401
+except ImportError as e:
+    from PyQt6.QtCore import QT_VERSION_STR
+
+    # The wheel must bundle the system Qt minor version, as QGIS uses its private API
+    qt_minor = QT_VERSION_STR.rsplit(".", 1)[0]
+    raise ImportError(
+        f"{e.msg}. The PyQt6 of your QGIS installation lacks the QML bindings, "
+        f"install them matching Qt {QT_VERSION_STR} with: "
+        f'pip install "PyQt6=={qt_minor}.*"'
+    ) from e
