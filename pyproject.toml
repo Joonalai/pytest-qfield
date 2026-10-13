@@ -22,7 +22,6 @@ classifiers = [
 dependencies = [
     "pytest-qt",
     "pytest-qgis>=3.0.1",
-    "PyQt6==6.9.1"
 ]
 
 [project.urls]
