@@ -746,7 +746,7 @@ class QFieldThemeStub(QObject):
     QField's QML components. In newer QField versions (>v4.0.6),
     Theme is a C++ singleton rather than a QML-only module.
 
-    https://github.com/opengisch/QField/blob/master/src/core/theme.h
+    https://github.com/opengisch/QField/blob/master/src/gui/qftheme.h
     """
 
     themeDataLoaded = pyqtSignal()
@@ -1110,6 +1110,10 @@ class QFieldThemeStub(QObject):
         return self._make_font(1.25, bold=True)
 
     # Layout constants
+    @pyqtProperty(int, constant=True)
+    def toolButtonSize(self) -> int:
+        return 48
+
     @pyqtProperty(int, constant=True)
     def popupScreenEdgeVerticalMargin(self) -> int:
         return 40

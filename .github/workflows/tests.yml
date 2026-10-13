@@ -23,25 +23,8 @@ jobs:
       image: qgis/qgis:${{ matrix.qgis-image-tags }}
     strategy:
       matrix:
-        include:
-          - qgis-image-tags: 4.2-questing
-            qfield-refs: v4.2.9
-            qfield-imports-dir: "QField/src/qml/imports"
-          - qgis-image-tags: 4.2-questing
-            qfield-refs: release-4_3
-            qfield-imports-dir: "QField/src/gui/qml"
-          - qgis-image-tags: 4.2-questing
-            qfield-refs: master
-            qfield-imports-dir: "QField/src/gui/qml"
-          - qgis-image-tags: latest
-            qfield-refs: v4.2.9
-            qfield-imports-dir: "QField/src/qml/imports"
-          - qgis-image-tags: latest
-            qfield-refs: release-4_3
-            qfield-imports-dir: "QField/src/gui/qml"
-          - qgis-image-tags: latest
-            qfield-refs: master
-            qfield-imports-dir: "QField/src/gui/qml"
+        qgis-image-tags: ["4.2-questing", "latest"]
+        qfield-refs: ["v4.2.9", "release-4_3", "master"]
       fail-fast: false
 
     steps:
@@ -70,7 +53,7 @@ jobs:
 
       - name: Run tests
         env:
-          QFIELD_IMPORTS_DIR: "${{ github.workspace }}/${{ matrix.qfield-imports-dir }}"
+          QFIELD_IMPORTS_DIR: "${{ github.workspace }}/QField"
           QGIS_IN_CI: 1
         run: |
           .venv/bin/uv run pytest -v --qgis_disable_gui test
