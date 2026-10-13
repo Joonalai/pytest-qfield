@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v0.11.0 (2026-10-13)
+
+### Bug Fixes
+
+- Drop PyQt6 dependency to use the one shipped with QGIS
+  ([`577b6c5`](https://github.com/Joonalai/pytest-qfield/commit/577b6c5d3e39343e0d9af9b0c9e74c6c80f8d897))
+
+- Remove qml `Theme` dir existence check
+  ([`6c3a96f`](https://github.com/Joonalai/pytest-qfield/commit/6c3a96fda7a1a448722623464fea5950493b8c72))
+
+### Features
+
+- Rename QFIELD_IMPORTS_DIR to QFIELD_SOURCE_DIR
+  ([`305735f`](https://github.com/Joonalai/pytest-qfield/commit/305735fde33c3f7916bfd00532f08fb6b35708fe))
+
+- Support also QField 4.3+ qml layout
+  ([`4a19f03`](https://github.com/Joonalai/pytest-qfield/commit/4a19f0365ae94514e227fca23720b8a9a236de0f))
+
+
 ## v0.10.0 (2026-10-02)
 
 ### Features
