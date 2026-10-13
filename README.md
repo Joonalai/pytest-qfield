@@ -217,21 +217,23 @@ pip install pytest-qfield
 If your QGIS PyQt6 lacks QML bindings (e.g. Debian, Ubuntu), the import error shows
 the command to install a matching PyQt6 wheel.
 
-### Configure QField imports path
+### Configure QField source path
 
 The plugin loads QML from QField source code. Clone [QField](https://github.com/opengisch/QField),
 check out the target QField tag and point the plugin to the clone either with an environment variable
 or a `pytest.ini` value. Both QField 4.3+ (`src/gui/qml`) and older (`src/qml/imports`) layouts are detected.
 
 ```bash
-QFIELD_IMPORTS_DIR=/absolute/path/to/QField pytest
+QFIELD_SOURCE_DIR=/absolute/path/to/QField pytest
 ```
 
 ```ini
 # pyproject.toml
 [tool.pytest.ini_options]
-qfield_imports_dir = /absolute/path/to/QField
+qfield_source_dir = /absolute/path/to/QField
 ```
+
+The former `QFIELD_IMPORTS_DIR` / `qfield_imports_dir` names still work but are deprecated.
 
 ## Development environment
 

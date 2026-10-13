@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with pytest-qfield.  If not, see <https://www.gnu.org/licenses/>.
 import os
+import warnings
 from collections.abc import Iterator
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -56,8 +57,10 @@ if TYPE_CHECKING:
     from pytestqt.qtbot import QtBot
     from qgis.gui import QgisInterface, QgsMapCanvas
 
-_QFIELD_IMPORTS_DIR_ENV = "QFIELD_IMPORTS_DIR"
-_QFIELD_IMPORT_DIR_KEY = "qfield_imports_dir"
+_QFIELD_SOURCE_DIR_ENV = "QFIELD_SOURCE_DIR"
+_QFIELD_SOURCE_DIR_KEY = "qfield_source_dir"
+_DEPRECATED_QFIELD_IMPORTS_DIR_ENV = "QFIELD_IMPORTS_DIR"
+_DEPRECATED_QFIELD_IMPORTS_DIR_KEY = "qfield_imports_dir"
 # QField <= 4.2
 _LEGACY_QML_IMPORTS_DIR = Path("src/qml/imports")
 # QField >= 4.3
@@ -430,7 +433,7 @@ def qfield_qml_import_path(
     request: "SubRequest", tmp_path_factory: "pytest.TempPathFactory"
 ) -> Path:
     """QML import path for the configured QField source checkout."""
-    qfield_source_path = _get_qfield_source_path(request)
+    qfield_source_path = _get_qfield_source_path(request.config)
     legacy_import_path = qfield_source_path / _LEGACY_QML_IMPORTS_DIR
     if legacy_import_path.exists():
         return legacy_import_path
@@ -440,21 +443,41 @@ def qfield_qml_import_path(
 
 
 def pytest_addoption(parser: "Parser") -> None:
+    parser.addini(_QFIELD_SOURCE_DIR_KEY, "Absolute path to a QField source checkout.")
     parser.addini(
-        _QFIELD_IMPORT_DIR_KEY,
-        "Absolute path to a QField source checkout.",
-        default=os.getenv(_QFIELD_IMPORTS_DIR_ENV),
+        _DEPRECATED_QFIELD_IMPORTS_DIR_KEY,
+        f"Deprecated, use {_QFIELD_SOURCE_DIR_KEY}.",
     )
 
 
-def _get_qfield_source_path(request: "SubRequest") -> Path:
-    qfield_path_config = request.config.getini(_QFIELD_IMPORT_DIR_KEY) or os.getenv(
-        _QFIELD_IMPORTS_DIR_ENV
+def _get_qfield_source_path(config: "pytest.Config") -> Path:
+    qfield_path_config = config.getini(_QFIELD_SOURCE_DIR_KEY) or os.getenv(
+        _QFIELD_SOURCE_DIR_ENV
     )
     if not qfield_path_config:
+        for deprecated_name, deprecated_value in (
+            (
+                _DEPRECATED_QFIELD_IMPORTS_DIR_KEY + " ini value",
+                config.getini(_DEPRECATED_QFIELD_IMPORTS_DIR_KEY),
+            ),
+            (
+                _DEPRECATED_QFIELD_IMPORTS_DIR_ENV + " environment variable",
+                os.getenv(_DEPRECATED_QFIELD_IMPORTS_DIR_ENV),
+            ),
+        ):
+            if deprecated_value:
+                warnings.warn(
+                    f"{deprecated_name} is deprecated, use "
+                    f"{_QFIELD_SOURCE_DIR_KEY} or {_QFIELD_SOURCE_DIR_ENV} instead",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                qfield_path_config = deprecated_value
+                break
+    if not qfield_path_config:
         raise ValueError(
-            f"No {_QFIELD_IMPORT_DIR_KEY} ini value "
-            f"or {_QFIELD_IMPORTS_DIR_ENV} environment variable set!"
+            f"No {_QFIELD_SOURCE_DIR_KEY} ini value "
+            f"or {_QFIELD_SOURCE_DIR_ENV} environment variable set!"
         )
 
     qfield_path = Path(qfield_path_config).resolve()
