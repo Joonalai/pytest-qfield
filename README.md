@@ -207,7 +207,6 @@ The QML window is stacked over `qgis_canvas` with the same geometry, as QField d
 You must have QGIS >= 4.0 installed to use this plugin.
 
 Install with `pip` or `uv` to a python environment that is aware of system QGIS libraries.
-PyQt6 is not installed as a dependency, as it must be the one QGIS was built against.
 You can create one with [qgis-venv-creator](https://github.com/GispoCoding/qgis-venv-creator).
 
 ```bash
