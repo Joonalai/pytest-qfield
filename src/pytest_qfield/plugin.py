@@ -24,6 +24,7 @@ import pytest
 from PyQt6.QtCore import QObject, QSettings, Qt, QUrl
 from PyQt6.QtQml import (
     QQmlApplicationEngine,
+    qmlRegisterModule,
     qmlRegisterType,
 )
 from PyQt6.QtQuickWidgets import QQuickWidget
@@ -57,6 +58,10 @@ if TYPE_CHECKING:
 
 _QFIELD_IMPORTS_DIR_ENV = "QFIELD_IMPORTS_DIR"
 _QFIELD_IMPORT_DIR_KEY = "qfield_imports_dir"
+# QField <= 4.2
+_LEGACY_QML_IMPORTS_DIR = Path("src/qml/imports")
+# QField >= 4.3
+_GUI_QML_DIR = Path("src/gui/qml")
 
 
 @pytest.fixture(scope="session")
@@ -90,17 +95,15 @@ def qfield_bot(  # noqa: PLR0913
     main_window_qml_path: Path,
     qtbot: "QtBot",
     qtlog: "_QtMessageCapture",
-    request: "SubRequest",
     qfield_qml_extra_context_properties: dict[str, object],
     tmp_path: "Path",
+    qfield_qml_import_path: Path,
 ) -> Iterator["QFieldBot"]:
     """Fixture used to create a QFieldBot instance for use during testing."""
-    qfield_import_path = _get_qfied_import_path(request)
-
     engine = QQmlApplicationEngine()
 
     # Load QField imports
-    engine.addImportPath(str(qfield_import_path))
+    engine.addImportPath(str(qfield_qml_import_path))
 
     # Inject QField interface stubs
     qfield_iface.setParent(engine)
@@ -123,6 +126,9 @@ def qfield_bot(  # noqa: PLR0913
         "GeometryUtils": qfield_geometry_utils_stub,
         **qfield_qml_extra_context_properties,
     }
+    # QField >= 4.3 components reference the theme singleton as QfTheme
+    if (qfield_qml_import_path / "org" / "qfield" / "gui").exists():
+        context_properties.setdefault("QfTheme", qfield_theme_stub)
 
     for property_name, property_value in context_properties.items():
         engine.rootContext().setContextProperty(property_name, property_value)
@@ -419,30 +425,69 @@ def register_qgis_types() -> None:
     # qmlRegisterSingletonType
 
 
+@pytest.fixture(scope="session")
+def qfield_qml_import_path(
+    request: "SubRequest", tmp_path_factory: "pytest.TempPathFactory"
+) -> Path:
+    """QML import path for the configured QField source checkout."""
+    qfield_source_path = _get_qfield_source_path(request)
+    legacy_import_path = qfield_source_path / _LEGACY_QML_IMPORTS_DIR
+    if legacy_import_path.exists():
+        return legacy_import_path
+    return _create_qfield_gui_modules(
+        qfield_source_path / _GUI_QML_DIR, tmp_path_factory.mktemp("qml_imports")
+    )
+
+
 def pytest_addoption(parser: "Parser") -> None:
     parser.addini(
         _QFIELD_IMPORT_DIR_KEY,
-        "Absolute path to a directory containing QField imports. "
-        "Usually src/qml/imports in QField source code.",
+        "Absolute path to a QField source checkout.",
         default=os.getenv(_QFIELD_IMPORTS_DIR_ENV),
     )
 
 
-def _get_qfied_import_path(request: "SubRequest") -> Path:
-    qfield_import_path_config = request.config.getini(
-        _QFIELD_IMPORT_DIR_KEY
-    ) or os.getenv(_QFIELD_IMPORTS_DIR_ENV)
-    if not qfield_import_path_config:
+def _get_qfield_source_path(request: "SubRequest") -> Path:
+    qfield_path_config = request.config.getini(_QFIELD_IMPORT_DIR_KEY) or os.getenv(
+        _QFIELD_IMPORTS_DIR_ENV
+    )
+    if not qfield_path_config:
         raise ValueError(
             f"No {_QFIELD_IMPORT_DIR_KEY} ini value "
             f"or {_QFIELD_IMPORTS_DIR_ENV} environment variable set!"
         )
 
-    qfield_import_path = Path(qfield_import_path_config)
-    if not qfield_import_path.exists():
-        raise ValueError(f"{qfield_import_path} does not exist!")
+    qfield_path = Path(qfield_path_config).resolve()
+    for qml_dir in (_LEGACY_QML_IMPORTS_DIR, _GUI_QML_DIR):
+        if qfield_path.parts[-len(qml_dir.parts) :] == qml_dir.parts:
+            qfield_path = qfield_path.parents[len(qml_dir.parts) - 1]
 
-    return qfield_import_path
+    if (
+        not (qfield_path / _GUI_QML_DIR).exists()
+        and not (qfield_path / _LEGACY_QML_IMPORTS_DIR).exists()
+    ):
+        raise ValueError(f"{qfield_path} is not a QField source checkout!")
+    return qfield_path
+
+
+def _create_qfield_gui_modules(qfield_gui_qml_path: Path, target_dir: Path) -> Path:
+    gui_module_dir = target_dir / "org" / "qfield" / "gui"
+    gui_module_dir.mkdir(parents=True)
+    # Absolute URLs keep the components in place, so their relative imports
+    # resolve without symlinking or copying them
+    components = sorted(qfield_gui_qml_path.glob("*.qml"))
+    (gui_module_dir / "qmldir").write_text(
+        "module org.qfield.gui\n"
+        + "".join(f"{path.stem} 1.0 {path.as_uri()}\n" for path in components)
+    )
+
+    # Components import org.qfield.core for its C++ types only
+    qmlRegisterModule("org.qfield.core", 1, 0)
+
+    theme_module_dir = target_dir / "Theme"
+    theme_module_dir.mkdir()
+    (theme_module_dir / "qmldir").write_text("module Theme\nimport org.qfield.gui\n")
+    return target_dir
 
 
 def _embed_qml_window_in_qgis_main_window(

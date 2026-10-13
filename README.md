@@ -219,19 +219,18 @@ the command to install a matching PyQt6 wheel.
 
 ### Configure QField imports path
 
-The plugin needs access to QField source code for its QML imports (typically `QField/src/qml/imports`).
-
-First clone [QField](https://github.com/opengisch/QField) source code somewhere and checkout the target QField tag and then
-set it either with an environment variable or a `pytest.ini` value.
+The plugin loads QML from QField source code. Clone [QField](https://github.com/opengisch/QField),
+check out the target QField tag and point the plugin to the clone either with an environment variable
+or a `pytest.ini` value. Both QField 4.3+ (`src/gui/qml`) and older (`src/qml/imports`) layouts are detected.
 
 ```bash
-QFIELD_IMPORTS_DIR=/absolute/path/to/QField/src/qml/imports pytest
+QFIELD_IMPORTS_DIR=/absolute/path/to/QField pytest
 ```
 
 ```ini
 # pyproject.toml
 [tool.pytest.ini_options]
-qfield_imports_dir = /absolute/path/to/QField/src/qml/imports
+qfield_imports_dir = /absolute/path/to/QField
 ```
 
 ## Development environment
