@@ -53,7 +53,7 @@ jobs:
 
       - name: Run tests
         env:
-          QFIELD_IMPORTS_DIR: "${{ github.workspace }}/QField"
+          QFIELD_SOURCE_DIR: "${{ github.workspace }}/QField"
           QGIS_IN_CI: 1
         run: |
           .venv/bin/uv run pytest -v --qgis_disable_gui test
